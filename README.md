@@ -1,7 +1,7 @@
-# SmartInno Engineering - Management Dashboards
+# SmartInno Engineering - SafariPro Management Dashboards
 
 <div align="center">
-  <img src="./assets/safari_pro_logo.png" alt="SafariPro Management Logo" width="200">
+  <img src="./assets/safari_pro_logo.png" alt="SafariPro Management Logo" width="140">
 </div>
 
 ## Project Overview
