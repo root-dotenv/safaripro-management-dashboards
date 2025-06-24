@@ -7,10 +7,17 @@ import {
   IoChevronDown,
   IoChevronUp,
   IoNotificationsOutline,
-  IoSearch, // Imported IoSearch for the search bar
+  IoSearch,
+  IoSunny,
 } from "react-icons/io5";
 import { IoArrowForward, IoArrowBack } from "react-icons/io5";
 import { IoCalendarOutline } from "react-icons/io5";
+import { HiOutlineCog6Tooth } from "react-icons/hi2";
+import { MdAdd } from "react-icons/md";
+import { BsMoonStars } from "react-icons/bs";
+import company_logo from "../../../public/images/safari_pro_logo_black.png";
+import UserProfileCard from "../ui/user-profile-card";
+import QuickLinksCard from "../ui/quick-links-card";
 
 interface TopNavbarProps {
   toggleTheme: () => void;
@@ -21,12 +28,20 @@ interface TopNavbarProps {
 const TopNavigationBar: React.FC<TopNavbarProps> = ({
   toggleTheme,
   currentTheme,
-  logoText,
 }) => {
   // - - - Hide/Show the account details modal
   const [openAccountModal, setOpenAccountModal] = useState<boolean>(false);
   const handleAccountModal = () => {
     setOpenAccountModal(!openAccountModal);
+    setOpenQuickActionsModal(false); // Close quick actions modal if account modal is opened
+  };
+
+  // - - - Hide/Show the quick actions modal
+  const [openQuickActionsModal, setOpenQuickActionsModal] =
+    useState<boolean>(false);
+  const handleQuickActionsModal = () => {
+    setOpenQuickActionsModal(!openQuickActionsModal);
+    setOpenAccountModal(false); // Close account modal if quick actions modal is opened
   };
 
   return (
@@ -36,11 +51,11 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
         {/* - - - A. Forward/Back, Searchbar, Calendar */}
         <div className="h-full flex items-center justify-center gap-x-[0.75rem] col-start-4 col-span-5">
           <div className="flex items-center gap-x-[0.75rem]">
-            <button>
+            <button className="cursor-pointer">
               <IoArrowBack color="#FFF" size={18} />
             </button>
-            <button>
-              <IoArrowForward color="#FFF" size={18} />
+            <button className="cursor-pointer">
+              <IoArrowForward color="#8f8f8f" size={18} />
             </button>
           </div>
           {/* Search bar input with icon */}
@@ -53,7 +68,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
             <input
               type="text"
               placeholder="Search for anything..."
-              className="pl-10 pr-4 py-[6px] rounded-md bg-[#483F7E] text-white placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-[#6290FA] text-[0.875rem] w-[380px]"
+              className="pl-10 pr-4 py-[6px] rounded-md bg-[#483F7E] text-white placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-[#7E53FC] text-[0.875rem] w-[380px]"
             />
           </div>
           <button className="block p-[6px] rounded-[8px] bg-[#FFF] cursor-pointer shadow">
@@ -95,17 +110,56 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
       </div>
 
       {/* 2. Title-Bar Sub-navigation Bar */}
-      <div className="bg-[#FFFFFF] w-full h-[44px] flex">
+      <div className="bg-[#FFF] w-full h-[48px] grid grid-cols-12 items-center px-[1rem]">
         {/* - - - Static Logo */}
-        <div className=""></div>
-        {/* - - - Dynamic Page Title & Action Button */}
-        <div></div>
+        <div className="col-span-5 flex gap-x-[0.75rem] items-center">
+          <div className="h-[2rem]">
+            <img
+              className="w-full h-full object-cover block"
+              src={company_logo}
+              alt="company_logo_black"
+            />
+          </div>
+          <span className="font-semibold text-[1.375rem] text-[#404042]">
+            SafariPro
+          </span>
+        </div>
+        {/* - - -  & Action Button */}
+        <div className="col-span-7 flex gap-x-[1rem] items-center justify-end">
+          <button
+            onClick={handleQuickActionsModal} // Added onClick handler
+            className="bg-[#6149E8] gap-x-1 px-[0.9375rem] py-[6px] flex items-center gap-2 text-[0.875rem] text-[#FFF] font-medium rounded-md cursor-pointer"
+          >
+            <MdAdd color="#FFF" size={17} />
+            New
+          </button>
+          {/* - - - divider */}
+          <div className="h-[20px] bg-[#8f8f8f] w-[1.5px]"></div>
+          {/* Theme mode switch */}
+          <button
+            onClick={toggleTheme}
+            className="cursor-pointer px-[10px] py-[8px] rounded-[8px] bg-[#F0F0F0] hover:bg-[#F0F0F0]"
+          >
+            {currentTheme === "dark" ? (
+              <IoSunny color="#F7C322" size={18} />
+            ) : (
+              <BsMoonStars color="#202020" size={18} />
+            )}
+          </button>
+          <button className="cursor-pointer">
+            <HiOutlineCog6Tooth color="#202020" size={20} />
+          </button>
+        </div>
       </div>
 
       {/* - - - User Account Details Card  */}
-      {openAccountModal && (
-        <div className="absolute top-[56px] border-[#E8E8E8] border-[1.5px] right-[1rem] w-[320px] h-[450px] bg-[#FFF] z-10 rounded-md shadow"></div>
-      )}
+      <UserProfileCard isOpen={openAccountModal} onClose={handleAccountModal} />
+
+      {/* - - - Quick Actions Modal */}
+      <QuickLinksCard
+        isOpen={openQuickActionsModal}
+        onLinkClick={handleQuickActionsModal}
+      />
     </nav>
   );
 };

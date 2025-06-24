@@ -69,11 +69,11 @@ export default function Sidebar() {
 
   return (
     <div className="w-[300px] bg-white shadow-md flex flex-col h-full">
-      {/* Navigation Menu */}
+      {/* - - - Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
         {menuItems.map((item) => (
           <div key={item.title} className="px-2">
-            {/* Main Menu Item */}
+            {/* - - - Main Menu Item */}
             <div
               className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${
                 expandedMenu === item.title
@@ -106,7 +106,7 @@ export default function Sidebar() {
               )}
             </div>
 
-            {/* Submenu Items */}
+            {/* - - - Submenu Items */}
             {expandedMenu === item.title && item.subItems && (
               <div className="ml-8 mt-1 space-y-1">
                 {item.subItems.map((subItem) => (
@@ -131,7 +131,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* User Profile/Footer Section */}
+      {/* - - - User Profile/Footer Section */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">

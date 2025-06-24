@@ -25,7 +25,7 @@ export default function DashboardLayout({
         logoText="SafariPro Admin"
       />
       <div className="flex flex-1">
-        {/* <Sidebar /> */}
+        <Sidebar />
         <div className="flex-1 overflow-auto">{children}</div>
       </div>
     </div>
