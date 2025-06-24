@@ -1,3 +1,4 @@
+// safaripro_admin/src/components/layout/sidebar.tsx
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import {
@@ -67,12 +68,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="w-64 bg-white shadow-md flex flex-col h-full">
-      {/* Logo/Header Section */}
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-800">SafariPro Admin</h1>
-      </div>
-
+    <div className="w-[300px] bg-white shadow-md flex flex-col h-full">
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
         {menuItems.map((item) => (
