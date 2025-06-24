@@ -72,13 +72,11 @@ git push origin your-github-username/your-feature-name
 
 1. File an issue describing your proposal
 
-```markdown
 **Proposal Title**  
 **Description**:  
 [Detailed explanation of proposed changes]  
 **Impact**:  
 [Which components/dashboards will be affected]
-```
 
 2. Wait for maintainer response
 
