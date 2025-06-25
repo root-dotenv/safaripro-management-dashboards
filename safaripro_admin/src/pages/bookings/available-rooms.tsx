@@ -1,7 +1,7 @@
 export default function AvailableRooms() {
   return (
     <div>
-      <p>Available Rooms</p>
+      <p>All the Available Rooms in all the hotels, also</p>
     </div>
   );
 }

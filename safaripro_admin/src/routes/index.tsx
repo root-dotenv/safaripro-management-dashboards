@@ -1,50 +1,45 @@
 // * - - - Main Routing File (3-stages routing i.e Routes > Subroute > Subroute)
 import { Routes, Route } from "react-router-dom";
 import MainOverview from "../pages/overview/overview";
-import GuestsPage from "../pages/guests/guests";
-import GuestDetailsPage from "../pages/guests/guest-details";
-import AddRoom from "../pages/rooms/add-room";
-import RoomCategories from "../pages/rooms/room-categories";
-import AllRooms from "../pages/rooms/all-rooms";
-import EditRoomPage from "../pages/rooms/edit-room";
 import AvailableRooms from "../pages/bookings/available-rooms";
-import CreateBookingForm from "../pages/bookings/create-booking-form";
 import SafariproBookings from "../pages/bookings/safaripro-bookings";
 import AllBookings from "../pages/bookings/all-bookings";
-import EditBooking from "../pages/bookings/edit-booking";
-import AddRoomCategory from "../pages/rooms/add-room-category";
+import FinancialPage from "../pages/financial/financial";
+import ReportsPage from "../pages/reports/reports";
+import AnalyticsPage from "../pages/analytics/analytics";
+import NewHotel from "../pages/hotel/new-hotel";
+import Hotels from "../pages/hotel/hotels";
+import HotelTypes from "../pages/hotel/hotel-types";
+import NewHotelType from "../pages/hotel/new-hotel-type";
+import RoomTypes from "../pages/rooms/room-types";
+import NewRoomTypes from "../pages/rooms/new-room-types";
 
 export default function AppRoutes() {
   return (
     <Routes>
       {/* - - - Main Overview (Default Home Route) */}
       <Route path="/" element={<MainOverview />} />
-      {/* - - - Guests Routes */}
-      <Route path="/guests" element={<GuestsPage />} />
-      <Route path="/guests/:guestId" element={<GuestDetailsPage />} />
+      {/* - - - Analytics & Financial Routes */}
+      <Route path="/analytics" element={<AnalyticsPage />} />
+      <Route path="/financial" element={<FinancialPage />} />
+      <Route path="/reports" element={<ReportsPage />} />
+      {/* - - - Hotels Routes */}
+      <Route path="/hotels/new-hotel" element={<NewHotel />} />
+      <Route path="/hotels/all-hotels" element={<Hotels />} />
+      <Route path="/hotels/hotel-types" element={<HotelTypes />} />
+      <Route path="/hotels/new-hotel-types" element={<NewHotelType />} />
+      {/* <Route path="/hotels/edit/:hotelId" element={<NewHotelType />} /> */}
       {/* - - - Rooms Routes */}
-      <Route path="/rooms/add-room" element={<AddRoom />} />
-      <Route path="/rooms/room-categories" element={<RoomCategories />} />
-      <Route path="/rooms/add-categories" element={<AddRoomCategory />} />
-      <Route path="/rooms/all-rooms" element={<AllRooms />} />
-      <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} />
+      <Route path="/rooms/room-types" element={<RoomTypes />} />
+      <Route path="/rooms/new-room-types" element={<NewRoomTypes />} />
+      {/* <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} /> */}
       {/* - - - Bookings Routes */}
-      <Route path="/bookings/new-booking" element={<AvailableRooms />} />{" "}
-      {/* Changed component */}
-      <Route
-        path="/bookings/new-booking/:roomId"
-        element={<CreateBookingForm />}
-      />{" "}
-      {/* NEW ROUTE */}
+      <Route path="/bookings/all-bookings" element={<AllBookings />} />
       <Route
         path="/bookings/safaripro-bookings"
         element={<SafariproBookings />}
       />
-      <Route path="/bookings/all-bookings" element={<AllBookings />} />
-      <Route
-        path="/bookings/all-bookings/:bookingId"
-        element={<EditBooking />}
-      />
+      <Route path="/bookings/available-rooms" element={<AvailableRooms />} />
     </Routes>
   );
 }

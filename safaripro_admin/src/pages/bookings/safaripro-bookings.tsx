@@ -1,7 +1,7 @@
 export default function SafariproBookings() {
   return (
     <div>
-      <p>SafariPro Bookings</p>
+      <p>All the bookings through SafariPro Bookings and their states too</p>
     </div>
   );
 }

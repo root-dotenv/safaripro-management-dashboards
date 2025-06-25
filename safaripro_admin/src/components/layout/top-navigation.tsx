@@ -15,7 +15,7 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { HiOutlineCog6Tooth } from "react-icons/hi2";
 import { MdAdd } from "react-icons/md";
 import { BsMoonStars } from "react-icons/bs";
-import company_logo from "../../../public/images/safari_pro_logo_black.png";
+// import company_logo from "../../../public/images/safari_pro_logo_black.png";
 import UserProfileCard from "../ui/user-profile-card";
 import QuickLinksCard from "../ui/quick-links-card";
 
@@ -41,7 +41,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
     useState<boolean>(false);
   const handleQuickActionsModal = () => {
     setOpenQuickActionsModal(!openQuickActionsModal);
-    setOpenAccountModal(false); // Close account modal if quick actions modal is opened
+    setOpenAccountModal(false);
   };
 
   return (
@@ -127,7 +127,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
         {/* - - -  & Action Button */}
         <div className="col-span-7 flex gap-x-[1rem] items-center justify-end">
           <button
-            onClick={handleQuickActionsModal} // Added onClick handler
+            onClick={handleQuickActionsModal}
             className="bg-[#6149E8] gap-x-1 px-[0.9375rem] py-[6px] flex items-center gap-2 text-[0.875rem] text-[#FFF] font-medium rounded-md cursor-pointer"
           >
             <MdAdd color="#FFF" size={17} />
