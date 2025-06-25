@@ -1,18 +1,18 @@
 // * - - - Axios Client (Request and Response) Configuration
 import axios from "axios";
 
-const hotelClient = axios.create({
-  baseURL: import.meta.env.VITE_HOTEL_BASE_URL,
+const bookingClient = axios.create({
+  baseURL: import.meta.env.VITE_BOOKING_BASE_URL,
   timeout: 15000, // - - - 15 Seconds, Same as In Query Provider
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// * - - - hotelClient (Request Interceptor)
-hotelClient.interceptors.request.use(
+// * - - - bookingClient (Request Interceptor)
+bookingClient.interceptors.request.use(
   (config) => {
-    console.log(`- - - Request Log: hotelClient`, config);
+    console.log(`- - - Request Log: bookingClient`, config);
     return config;
   },
   (error) => {
@@ -21,21 +21,21 @@ hotelClient.interceptors.request.use(
   }
 );
 
-// * - - - hotelClient (Response Interceptor)
-hotelClient.interceptors.response.use(
+// * - - - bookingClient (Response Interceptor)
+bookingClient.interceptors.response.use(
   (response) => {
-    console.log(`- - - Response Log: hotelClient`, response);
+    console.log(`- - - Response Log: bookingClient`, response);
     return response;
   },
   (error) => {
     if (error.response.status === 401) {
-      console.log(`401 An Error has occured: hotelClient`, error.message);
+      console.log(`401 An Error has occured: bookingClient`, error.message);
       console.log("Unauthorized request. Redirecting to login...");
     }
     return Promise.reject(error);
   }
 );
 
-export default hotelClient;
+export default bookingClient;
 
 // TODO : Add Token Management on Request After Signup (i.e create another authClient) file for managing authentications abd tokenizations
