@@ -1,9 +1,5 @@
+// safaripro_admin/src/routes/index.tsx
 import { createBrowserRouter } from "react-router-dom";
-import HotelManagementLayout from "./hotel-management";
-import HotelOverview from "./hotel-management/overview";
-import HotelsLayout from "./hotel-management/hotels";
-import AddHotel from "./hotel-management/hotels/add-hotel";
-import HotelTypes from "./hotel-management/hotels/hotel-types";
 import App from "../App";
 
 export const router = createBrowserRouter([
@@ -28,6 +24,10 @@ export const router = createBrowserRouter([
             element: <HotelsLayout />,
             children: [
               {
+                index: true,
+                element: <AvailableHotels />,
+              },
+              {
                 path: "add-hotel",
                 element: <AddHotel />,
               },
@@ -37,10 +37,89 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // Add other hotel management routes here
+          {
+            path: "rooms",
+            element: <RoomsLayout />,
+            children: [
+              {
+                index: true,
+                element: <AllRooms />,
+              },
+              {
+                path: "add-room-type",
+                element: <AddRoomType />,
+              },
+              {
+                path: "room-types",
+                element: <RoomTypes />,
+              },
+            ],
+          },
+          {
+            path: "bookings",
+            element: <BookingsLayout />,
+            children: [
+              {
+                path: "safaripro",
+                element: <SafariProBookings />,
+              },
+              {
+                path: "overview",
+                index: true,
+                element: <BookingsOverview />,
+              },
+            ],
+          },
+          {
+            path: "facilities",
+            element: <FacilitiesLayout />,
+            children: [
+              {
+                index: true,
+                element: <AllFacilities />,
+              },
+              {
+                path: "add-facility",
+                element: <AddFacility />,
+              },
+              {
+                path: "facility-types",
+                element: <FacilityTypes />,
+              },
+            ],
+          },
+          {
+            path: "amenities",
+            element: <AmenitiesLayout />,
+            children: [
+              {
+                path: "add-amenity",
+                element: <AddAmenity />,
+              },
+              {
+                index: true,
+                element: <AllAmenities />,
+              },
+            ],
+          },
         ],
       },
-      // Add other top-level routes here
+
+      // - - - Car Rental Management : Upcoming
+      {
+        path: "car-rental",
+        element: <div>Car Rental Dashboard (To be implemented)</div>,
+      },
+      // - - - Tour Guide Management : Upcoming
+      {
+        path: "tour-guide",
+        element: <div>Tour Guide Dashboard (To be implemented)</div>,
+      },
+      // - - - Cab Management : Upcoming
+      {
+        path: "cab-management",
+        element: <div>Cab Management Dashboard (To be implemented)</div>,
+      },
     ],
   },
 ]);

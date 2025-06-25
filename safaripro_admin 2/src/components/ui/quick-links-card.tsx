@@ -29,16 +29,16 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = ({
         </li>
         <li>
           <Link
-            to="/hotel-management/rooms/create-room-types" // Updated to the new route for creating room types
+            to="/hotel-management/rooms/add-room-type"
             className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
             onClick={onLinkClick}
           >
-            Create Room Types
+            Add Room Types
           </Link>
         </li>
         <li>
           <Link
-            to="/hotel-management/facilities/add-facility" // Assuming a future "add-facility" route under facilities
+            to="/hotel-management/facilities/add-facility"
             className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
             onClick={onLinkClick}
           >
@@ -47,7 +47,7 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = ({
         </li>
         <li>
           <Link
-            to="/hotel-management/amenities/add-amenity" // Assuming a future "add-amenity" route under amenities
+            to="/hotel-management/amenities/add-amenity"
             className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
             onClick={onLinkClick}
           >
@@ -56,7 +56,7 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = ({
         </li>
         <li>
           <Link
-            to="/hotel-management/features/add-feature" // Assuming a future "add-feature" route
+            to="/hotel-management/features/add-feature"
             className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
             onClick={onLinkClick}
           >
@@ -65,11 +65,11 @@ const QuickLinksCard: React.FC<QuickLinksCardProps> = ({
         </li>
         <li>
           <Link
-            to="/hotel-management/hotels/hotel-types" // Already existed, just confirming path
+            to="/hotel-management/hotel-types/create-hotel-type"
             className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
             onClick={onLinkClick}
           >
-            Manage Hotel Types
+            Create Hotel Types
           </Link>
         </li>
       </ul>
