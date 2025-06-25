@@ -22,8 +22,6 @@ export default function MainLayout({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {" "}
-      {/* Changed to flex-col */}
       <TopNavigationBar
         toggleTheme={toggleTheme}
         currentTheme={currentTheme}
@@ -31,9 +29,8 @@ export default function MainLayout({
       />
       <div className="flex flex-1 overflow-hidden">
         {" "}
-        {/* New flex container for sidebar and main content */}
         <SideBar collapsed={sidebarCollapsed} toggleCollapse={toggleSidebar} />
-        <main className="flex-1 overflow-y-auto bg-[#F8FAFB] dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto bg-[#F9F9F9] dark:bg-gray-900">
           {children}
         </main>
       </div>
