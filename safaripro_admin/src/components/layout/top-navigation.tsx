@@ -113,7 +113,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
       <div className="bg-[#FFF] w-full h-[48px] grid grid-cols-12 items-center px-[1rem]">
         {/* - - - Static Logo */}
         <div className="col-span-5 flex gap-x-[0.75rem] items-center">
-          <div className="h-[2rem]">
+          {/* <div className="h-[2rem]">
             <img
               className="w-full h-full object-cover block"
               src={company_logo}
@@ -122,7 +122,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
           </div>
           <span className="font-semibold text-[1.375rem] text-[#404042]">
             SafariPro
-          </span>
+          </span> */}
         </div>
         {/* - - -  & Action Button */}
         <div className="col-span-7 flex gap-x-[1rem] items-center justify-end">
