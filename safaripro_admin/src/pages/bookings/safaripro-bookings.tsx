@@ -4,11 +4,11 @@ import bookingClient from "../../api/booking-client";
 import type { Booking } from "./booking-types";
 import { FaEye } from "react-icons/fa";
 import { useState } from "react";
+import CustomLoader from "../../components/ui/custom-loader";
 
 export default function SafariproBookings() {
   const [limit] = useState(10);
   const [offset, setOffset] = useState(0);
-
   // - - - Get all bookings (query function)
   const {
     data: bookings,
@@ -16,10 +16,10 @@ export default function SafariproBookings() {
     isLoading,
     isError,
   } = useQuery<Booking[]>({
-    queryKey: ["bookings", limit, offset, "Online"],
+    queryKey: ["bookings", limit, offset],
     queryFn: async () => {
       const response = await bookingClient.get(
-        `v1/bookings?limit=${limit}&offset=${offset}&booking_type=Online`
+        `v1/bookings?limit=${limit}&offset=${offset}`
       );
       return response.data.results;
     },
@@ -27,7 +27,7 @@ export default function SafariproBookings() {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <CustomLoader />;
   }
   if (isError) {
     return <div>Error: {error.message}</div>;

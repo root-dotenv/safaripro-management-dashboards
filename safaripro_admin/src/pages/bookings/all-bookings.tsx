@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import bookingClient from "../../api/booking-client";
 import type { Booking } from "./booking-types";
 import { FaEye } from "react-icons/fa";
-import { useState } from "react";
+import { useState } from "react"; // Import useState
+import CustomLoader from "../../components/ui/custom-loader";
 
 export default function AllBookings() {
   const [limit] = useState(10);
   const [offset, setOffset] = useState(0);
-
   // - - - Get all bookings (query function)
   const {
     data: bookings,
@@ -27,7 +27,7 @@ export default function AllBookings() {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <CustomLoader />;
   }
   if (isError) {
     return <div>Error: {error.message}</div>;
@@ -194,7 +194,7 @@ export default function AllBookings() {
         </tbody>
       </table>
 
-      {/* - - - Pagination Controls */}
+      {/* Pagination Controls */}
       <div className="flex justify-between items-center mt-4">
         <button
           onClick={handlePreviousPage}
