@@ -13,6 +13,7 @@ import HotelTypes from "../pages/hotel/hotel-types";
 import NewHotelType from "../pages/hotel/new-hotel-type";
 import RoomTypes from "../pages/rooms/room-types";
 import NewRoomTypes from "../pages/rooms/new-room-types";
+import EditRoomType from "../pages/rooms/edit-room-type";
 
 export default function AppRoutes() {
   return (
@@ -32,6 +33,7 @@ export default function AppRoutes() {
       {/* - - - Rooms Routes */}
       <Route path="/rooms/room-types" element={<RoomTypes />} />
       <Route path="/rooms/new-room-types" element={<NewRoomTypes />} />
+      <Route path="/rooms/edit/:room_type_id" element={<EditRoomType />} />
       {/* <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} /> */}
       {/* - - - Bookings Routes */}
       <Route path="/bookings/all-bookings" element={<AllBookings />} />

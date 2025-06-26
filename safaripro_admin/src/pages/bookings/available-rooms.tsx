@@ -154,49 +154,49 @@ export default function AvailableRooms() {
           <tr>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Room Code
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Description
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Capacity
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Price
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Status
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Hotel
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Room Type
             </th>
             <th
               scope="col"
-              className="px-2 py-1 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
+              className="px-3 py-3 text-left text-xs font-medium text-[#202020] uppercase tracking-wider"
             >
               Actions
             </th>
@@ -205,19 +205,19 @@ export default function AvailableRooms() {
         <tbody className="bg-white divide-y divide-gray-200">
           {rooms?.map((room) => (
             <tr key={room.id} className="hover:bg-gray-50">
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 {room.code}
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 {room.description}
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 {room.max_occupancy}
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 ${room.price_per_night}
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     room.availability_status === "Booked"
@@ -230,13 +230,13 @@ export default function AvailableRooms() {
                   {room.availability_status}
                 </span>
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 {hotelNamesMap.get(room.hotel) || "N/A"}
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-sm text-[#202020]">
                 {roomTypeNamesMap.get(room.room_type) || "N/A"}
               </td>
-              <td className="px-2 py-1 whitespace-nowrap text-center text-sm text-[#202020]">
+              <td className="px-3 py-3 whitespace-nowrap text-center text-sm text-[#202020]">
                 <button
                   onClick={() =>
                     console.log(`View details for room ${room.id}`)
