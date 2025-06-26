@@ -181,6 +181,30 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
                 isSubLink
               />
             </SidebarSubMenu>
+
+            {/* - - - Rooms Route & Subroute */}
+            <SidebarSubMenu
+              title="Amenities"
+              icon={<BiHotel color="#404042" size={19} />}
+              collapsed={collapsed}
+              isOpen={openSubmenus.amenities}
+              onToggle={() => toggleSubmenu("amenities")}
+            >
+              <SidebarLink
+                to="/amenities"
+                icon={<VscTypeHierarchySuper color="#404042" size={19} />}
+                text="Hotel Amenities"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/amenities/new-amenity"
+                icon={<TbBuildingPlus size={19} color="#404042" />}
+                text="Create New Amenity"
+                collapsed={collapsed}
+                isSubLink
+              />
+            </SidebarSubMenu>
           </ul>
         </nav>
       </div>

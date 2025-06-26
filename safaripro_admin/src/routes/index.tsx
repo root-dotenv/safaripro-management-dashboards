@@ -14,6 +14,11 @@ import NewHotelType from "../pages/hotel/new-hotel-type";
 import RoomTypes from "../pages/rooms/room-types";
 import NewRoomTypes from "../pages/rooms/new-room-types";
 import EditRoomType from "../pages/rooms/edit-room-type";
+import HotelDetails from "../pages/hotel/hotel-details";
+import EditHotelType from "../pages/hotel/edit-hotel-type";
+import Amenities from "../pages/amenities/amenities";
+import NewAmenity from "../pages/amenities/new-amenity";
+import EditAmenity from "../pages/amenities/edit-amenity";
 
 export default function AppRoutes() {
   return (
@@ -29,6 +34,11 @@ export default function AppRoutes() {
       <Route path="/hotels/all-hotels" element={<Hotels />} />
       <Route path="/hotels/hotel-types" element={<HotelTypes />} />
       <Route path="/hotels/new-hotel-types" element={<NewHotelType />} />
+      <Route path="/hotels/:hotel_id" element={<HotelDetails />} />
+      <Route
+        path="/hotels/hotel-types/:hotel_type_id"
+        element={<EditHotelType />}
+      />
       {/* <Route path="/hotels/edit/:hotelId" element={<NewHotelType />} /> */}
       {/* - - - Rooms Routes */}
       <Route path="/rooms/room-types" element={<RoomTypes />} />
@@ -42,6 +52,10 @@ export default function AppRoutes() {
         element={<SafariproBookings />}
       />
       <Route path="/bookings/available-rooms" element={<AvailableRooms />} />
+      {/* - - - Amenities Routes */}
+      <Route path="/amenities" element={<Amenities />} />
+      <Route path="/amenities/new-amenity" element={<NewAmenity />} />
+      <Route path="/amenities/edit/:amenity_id" element={<EditAmenity />} />
     </Routes>
   );
 }
