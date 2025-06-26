@@ -29,6 +29,8 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
     hotels: true,
     rooms: false,
     bookings: true,
+    amenities: false,
+    facilities: false,
   });
 
   const toggleSubmenu = (menu: string) => {
@@ -182,7 +184,7 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
               />
             </SidebarSubMenu>
 
-            {/* - - - Rooms Route & Subroute */}
+            {/* - - - Amenities Route & Subroute */}
             <SidebarSubMenu
               title="Amenities"
               icon={<BiHotel color="#404042" size={19} />}
@@ -191,7 +193,7 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
               onToggle={() => toggleSubmenu("amenities")}
             >
               <SidebarLink
-                to="/amenities"
+                to="/amenities/all-amenities"
                 icon={<VscTypeHierarchySuper color="#404042" size={19} />}
                 text="Hotel Amenities"
                 collapsed={collapsed}
@@ -201,6 +203,30 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
                 to="/amenities/new-amenity"
                 icon={<TbBuildingPlus size={19} color="#404042" />}
                 text="Create New Amenity"
+                collapsed={collapsed}
+                isSubLink
+              />
+            </SidebarSubMenu>
+
+            {/* - - - Facilities Route & Subroute */}
+            <SidebarSubMenu
+              title="Facilities"
+              icon={<RiHotelLine color="#404042" size={19} />}
+              collapsed={collapsed}
+              isOpen={openSubmenus.facilities}
+              onToggle={() => toggleSubmenu("facilities")}
+            >
+              <SidebarLink
+                to="/facilities/all-facilities"
+                icon={<TbBuildingPlus color="#404042" size={19} />}
+                text="Hotel Facilities"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/facilities/new-facility"
+                icon={<PiDotsSixVertical size={19} color="#404042" />}
+                text="Create New Facility"
                 collapsed={collapsed}
                 isSubLink
               />

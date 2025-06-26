@@ -19,6 +19,9 @@ import EditHotelType from "../pages/hotel/edit-hotel-type";
 import Amenities from "../pages/amenities/amenities";
 import NewAmenity from "../pages/amenities/new-amenity";
 import EditAmenity from "../pages/amenities/edit-amenity";
+import Facilities from "../pages/facilities/facilities";
+import NewFacility from "../pages/facilities/new-facilities";
+import EditFacility from "../pages/facilities/edit-facility";
 
 export default function AppRoutes() {
   return (
@@ -53,9 +56,14 @@ export default function AppRoutes() {
       />
       <Route path="/bookings/available-rooms" element={<AvailableRooms />} />
       {/* - - - Amenities Routes */}
-      <Route path="/amenities" element={<Amenities />} />
+      <Route path="/amenities/all-amenities" element={<Amenities />} />
       <Route path="/amenities/new-amenity" element={<NewAmenity />} />
       <Route path="/amenities/edit/:amenity_id" element={<EditAmenity />} />
+
+      {/* - - - Facilities Routes */}
+      <Route path="/facilities/all-facilities" element={<Facilities />} />
+      <Route path="/facilities/new-facility" element={<NewFacility />} />
+      <Route path="/facilities/edit/:facility_id" element={<EditFacility />} />
     </Routes>
   );
 }
