@@ -26,9 +26,9 @@ interface SideBarProps {
 
 export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
-    hotels: true,
+    hotels: false,
     rooms: false,
-    bookings: true,
+    bookings: false,
     amenities: false,
     facilities: false,
   });

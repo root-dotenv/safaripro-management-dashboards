@@ -99,7 +99,7 @@ export interface Hotel {
   instagram_url: string | null;
   twitter_url: string | null;
   youtube_url: string | null;
-  Maps_url: string | null;
+  Maps_url: string | null; // Corrected from Google_Maps_url based on previous turn's output
   summary_counts: SummaryCounts;
   average_room_price: number;
   occupancy_rate: number;
@@ -174,4 +174,120 @@ export interface HotelType {
   code: string;
   description: string;
   translation: string | null;
+}
+
+export interface HotelImage {
+  id: string;
+  hotel_name: string;
+  hotel_id: string;
+  category_name: string;
+  category_id: string;
+  thumbnails: null; // Or `any[]` or a more specific type if known
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_by: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  tag: string;
+  original: string;
+  image_type: string;
+  is_primary: boolean;
+  caption: string | null;
+  category: string;
+  hotel: string;
+  translation: string | null;
+}
+
+export interface Region {
+  id: string;
+  country_name: string;
+  country_id: string;
+  hotel_count: number;
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_by: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  name: string;
+  kind: string;
+  state_code: string | null;
+  country: string;
+}
+
+export interface Theme {
+  id: string;
+  translation_language: string | null;
+  translation_id: string | null;
+  hotel_count: number;
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_by: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  name: string;
+  description: string;
+  translation: string | null;
+}
+
+export interface MealType {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  score: number;
+  hotel_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// New interfaces for Country, Service, and Translation
+export interface Country {
+  id: string;
+  name: string;
+  // Add other properties if available in the actual API response
+  // e.g., code: string;
+}
+
+export interface Service {
+  id: string;
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_by: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  name: string;
+  description: string;
+  amendment: string | null;
+  icon: string | null;
+  service_type: string; // ID
+  service_scope: string; // ID
+  translation: string | null;
+}
+
+export interface Translation {
+  id: string;
+  country_id: string;
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_by: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  language: string;
+  country: string; // ID
 }

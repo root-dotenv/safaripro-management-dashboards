@@ -1,16 +1,20 @@
 // hotels.tsx
-import { useQuery } from "@tanstack/react-query";
+import { QueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import hotelClient from "../../api/hotel-client";
 import CustomLoader from "../../components/ui/custom-loader";
 import { useState } from "react";
-import type { PaginatedHotelsResponse } from "../../types/hotel-types";
-import { FaEye } from "react-icons/fa";
+import type { PaginatedHotelsResponse } from "../../types/hotel-types"; // Import Hotel type for optimistic update
+import { FaEye, FaTrash } from "react-icons/fa"; // Import FaTrash icon
 import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { toast } from "react-toastify"; // Import toast for notifications
+import Swal from "sweetalert2"; // Import SweetAlert2 for confirmation dialog
+
+const queryClient = new QueryClient(); // Initialize QueryClient
 
 export default function Hotels() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const {
     data: hotelsResponse,
@@ -32,6 +36,61 @@ export default function Hotels() {
   const hotels = hotelsResponse?.results;
   const hasNextPage = hotelsResponse?.next !== null;
   const hasPreviousPage = hotelsResponse?.previous !== null;
+
+  // * - - - Mutation for Deleting Hotel
+  const deleteMutation = useMutation({
+    mutationFn: async (hotelId: string) => {
+      await hotelClient.delete(`v1/hotels/${hotelId}/`);
+    },
+    onMutate: async (hotelIdToDelete: string) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["hotels", page, limit] });
+
+      // Snapshot the previous value
+      const previousHotels = queryClient.getQueryData<PaginatedHotelsResponse>([
+        "hotels",
+        page,
+        limit,
+      ]);
+
+      // Optimistically update the list by removing the deleted hotel
+      queryClient.setQueryData<PaginatedHotelsResponse>(
+        ["hotels", page, limit],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            results: old.results.filter(
+              (hotel) => hotel.id !== hotelIdToDelete
+            ),
+            count: old.count - 1, // Decrement total count optimistically
+          };
+        }
+      );
+
+      // Return a context object with the snapshotted value
+      return { previousHotels };
+    },
+    onSuccess: () => {
+      toast.success("Hotel deleted successfully!");
+    },
+    onError: (err, hotelIdToDelete, context) => {
+      toast.error(
+        `Error deleting hotel: ${err.message || "An unknown error occurred"}`
+      );
+      // Rollback to the previous data if the mutation fails
+      if (context?.previousHotels) {
+        queryClient.setQueryData<PaginatedHotelsResponse>(
+          ["hotels", page, limit],
+          context.previousHotels
+        );
+      }
+    },
+    onSettled: () => {
+      // Invalidate and refetch after error or success to ensure data is fresh
+      queryClient.invalidateQueries({ queryKey: ["hotels"] });
+    },
+  });
 
   if (isLoading) {
     return <CustomLoader />;
@@ -63,6 +122,26 @@ export default function Hotels() {
   // - - - Handle View Details
   const handleViewDetails = (hotelId: string) => {
     navigate(`/hotels/${hotelId}`); // Redirect to HotelDetails page
+  };
+
+  // - - - Handle Delete Hotel
+  const handleDeleteHotel = (hotelId: string, hotelName: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete the hotel "${hotelName}". This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(hotelId);
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info("Delete action cancelled.");
+      }
+    });
   };
 
   return (
@@ -182,9 +261,17 @@ export default function Hotels() {
               <td className="px-2 py-1 whitespace-nowrap text-center text-sm text-[#202020]">
                 <button
                   onClick={() => handleViewDetails(hotel.id)}
-                  className="text-indigo-600 hover:text-indigo-900 font-medium"
+                  className="text-indigo-600 hover:text-indigo-900 font-medium mr-2" // Added mr-2 for spacing
+                  title="View Hotel Details"
                 >
                   <FaEye />
+                </button>
+                <button
+                  onClick={() => handleDeleteHotel(hotel.id, hotel.name)} // Pass hotel name for confirmation
+                  className="text-red-600 hover:text-red-900 font-medium"
+                  title="Delete Hotel"
+                >
+                  <FaTrash />
                 </button>
               </td>
             </tr>
