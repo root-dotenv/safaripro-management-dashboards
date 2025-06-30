@@ -19,6 +19,7 @@ import { RiHotelLine } from "react-icons/ri";
 import { HiOutlineDocumentChartBar } from "react-icons/hi2";
 import SidebarLink from "./sidebar-link";
 import SidebarSubMenu from "./sidebar-submenu";
+import { IoAdd } from "react-icons/io5";
 interface SideBarProps {
   collapsed: boolean;
   toggleCollapse: () => void;
@@ -187,7 +188,7 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
             {/* - - - Amenities Route & Subroute */}
             <SidebarSubMenu
               title="Amenities"
-              icon={<BiHotel color="#404042" size={19} />}
+              icon={<IoAdd color="#404042" size={19} />}
               collapsed={collapsed}
               isOpen={openSubmenus.amenities}
               onToggle={() => toggleSubmenu("amenities")}

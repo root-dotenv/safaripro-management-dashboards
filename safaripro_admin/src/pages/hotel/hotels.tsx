@@ -3,13 +3,13 @@ import { QueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import hotelClient from "../../api/hotel-client";
 import CustomLoader from "../../components/ui/custom-loader";
 import { useState } from "react";
-import type { PaginatedHotelsResponse } from "../../types/hotel-types"; // Import Hotel type for optimistic update
-import { FaEye, FaTrash } from "react-icons/fa"; // Import FaTrash icon
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-import { toast } from "react-toastify"; // Import toast for notifications
-import Swal from "sweetalert2"; // Import SweetAlert2 for confirmation dialog
+import type { PaginatedHotelsResponse } from "../../types/hotel-types";  
+import { FaEye, FaTrash } from "react-icons/fa";  
+import { useNavigate } from "react-router-dom";  
+import { toast } from "react-toastify";  
+import Swal from "sweetalert2"; 
 
-const queryClient = new QueryClient(); // Initialize QueryClient
+const queryClient = new QueryClient();  
 
 export default function Hotels() {
   const [page, setPage] = useState(1);
