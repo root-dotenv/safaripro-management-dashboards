@@ -3,7 +3,7 @@ import axios from "axios";
 
 const bookingClient = axios.create({
   baseURL: import.meta.env.VITE_BOOKING_BASE_URL,
-  timeout: 15000, // - - - 15 Seconds, Same as In Query Provider
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
