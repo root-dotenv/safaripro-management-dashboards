@@ -77,37 +77,44 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
 
             {/* - - - Hotels Route & Subroute */}
             <SidebarSubMenu
-              title="Hotels"
+              title="Hotel"
               icon={<RiHotelLine color="#404042" size={19} />}
               collapsed={collapsed}
-              isOpen={openSubmenus.hotels}
-              onToggle={() => toggleSubmenu("hotels")}
+              isOpen={openSubmenus.hotel}
+              onToggle={() => toggleSubmenu("hotel")}
             >
               <SidebarLink
-                to="/hotels/new-hotel"
+                to="/hotel/my-hotel"
                 icon={<TbBuildingPlus color="#404042" size={19} />}
-                text="New Hotel"
+                text="My Hotel"
                 collapsed={collapsed}
                 isSubLink
               />
               <SidebarLink
-                to="/hotels/all-hotels"
+                to="/hotel/hotel-facilities"
                 icon={<PiDotsSixVertical size={19} color="#404042" />}
-                text="All Hotels"
+                text="Hotel Facilities"
                 collapsed={collapsed}
                 isSubLink
               />
               <SidebarLink
-                to="/hotels/hotel-types"
+                to="/hotel/hotel-services"
                 icon={<VscTypeHierarchySuper color="#404042" size={19} />}
-                text="Hotel Types"
+                text="Hotel Services"
                 collapsed={collapsed}
                 isSubLink
               />
               <SidebarLink
-                to="/hotels/new-hotel-types"
+                to="/hotel/hotel-amenities"
                 icon={<MdDomainAdd color="#404042" size={19} />}
-                text="New Hotel-Type"
+                text="Hotel Amenities"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/hotel/hotel-events"
+                icon={<MdDomainAdd color="#404042" size={19} />}
+                text="Hotel Events"
                 collapsed={collapsed}
                 isSubLink
               />

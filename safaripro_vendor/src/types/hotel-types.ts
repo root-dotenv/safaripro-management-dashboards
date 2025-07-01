@@ -1,39 +1,67 @@
-export interface RoomTypeSummary {
+// types/hotel.ts
+
+/**
+ * Interface for Room Counts
+ */
+export interface IRoomCounts {
+  Available: number;
+  Booked: number;
+  Maintenance: number;
+  Cancelled: number;
+  Pending: number;
+  Processing: number;
+  Not_Available: number;
+  total: number;
+}
+
+/**
+ * Interface for Availability Status Counts
+ */
+export interface IAvailabilityStatusCounts {
+  Available: number;
+  Booked: number;
+  Maintenance: number;
+}
+
+/**
+ * Interface for Room Type Availability
+ */
+export interface IRoomTypeAvailability {
+  status_counts: IAvailabilityStatusCounts;
+  total_rooms: number;
+  available_rooms: number;
+  booked_rooms: number;
+  maintenance_rooms: number;
+  occupancy_percentage: number;
+}
+
+/**
+ * Interface for Room Type Pricing
+ */
+export interface IRoomTypePricing {
+  min_price: number;
+  max_price: number;
+  avg_price: number;
+}
+
+/**
+ * Interface for Room Type
+ */
+export interface IRoomType {
   id: string;
   name: string;
   code: string;
   max_occupancy: number;
   bed_type: string;
-  room_counts: {
-    Available: number;
-    Booked: number;
-    Maintenance: number;
-    Cancelled: number;
-    Pending: number;
-    Processing: number;
-    Not_Available: number;
-    total: number;
-  };
-  availability: {
-    status_counts: {
-      Available: number;
-      Booked: number;
-      [key: string]: number;
-    };
-    total_rooms: number;
-    available_rooms: number;
-    booked_rooms: number;
-    maintenance_rooms: number;
-    occupancy_percentage: number;
-  };
-  pricing: {
-    min_price: number;
-    max_price: number;
-    avg_price: number;
-  };
+  room_counts: IRoomCounts;
+  availability: IRoomTypeAvailability;
+  pricing: IRoomTypePricing;
 }
 
-export interface PricingData {
+/**
+ * Interface for Pricing Data
+ */
+export interface IPricingData {
   min: number;
   max: number;
   avg: number;
@@ -41,17 +69,23 @@ export interface PricingData {
   has_promotions: boolean;
 }
 
-export interface AvailabilityStats {
+/**
+ * Interface for Availability Stats
+ */
+export interface IAvailabilityStats {
   status_counts: {
+    Maintenance: number;
     Available: number;
     Booked: number;
-    [key: string]: number;
   };
   occupancy_rate: number;
   last_updated: string;
 }
 
-export interface HasMore {
+/**
+ * Interface for Has More
+ */
+export interface IHasMore {
   images: boolean;
   rooms: boolean;
   staff: boolean;
@@ -60,7 +94,10 @@ export interface HasMore {
   activities: boolean;
 }
 
-export interface NextPageTokens {
+/**
+ * Interface for Next Page Tokens
+ */
+export interface INextPageTokens {
   images: number;
   rooms: number;
   staff: number;
@@ -69,7 +106,10 @@ export interface NextPageTokens {
   activities: number;
 }
 
-export interface SummaryCounts {
+/**
+ * Interface for Summary Counts
+ */
+export interface ISummaryCounts {
   rooms: number;
   images: number;
   reviews: number;
@@ -80,32 +120,35 @@ export interface SummaryCounts {
   maintenance_requests: number;
 }
 
-export interface Hotel {
+/**
+ * Main Hotel Interface
+ */
+export interface IHotel {
   id: string;
   image_ids: string[];
-  room_type: RoomTypeSummary[];
+  room_type: IRoomType[];
   staff_ids: string[];
   promotion_ids: string[];
   event_space_ids: string[];
   department_ids: string[];
   activity_ids: string[];
   maintenance_request_ids: string[];
-  pricing_data: PricingData;
-  availability_stats: AvailabilityStats;
-  has_more: HasMore;
-  next_page_tokens: NextPageTokens;
+  pricing_data: IPricingData;
+  availability_stats: IAvailabilityStats;
+  has_more: IHasMore;
+  next_page_tokens: INextPageTokens;
   website_url: string | null;
   facebook_url: string | null;
   instagram_url: string | null;
   twitter_url: string | null;
   youtube_url: string | null;
-  Maps_url: string | null; // Corrected from Google_Maps_url based on previous turn's output
-  summary_counts: SummaryCounts;
+  google_maps_url: string | null;
+  summary_counts: ISummaryCounts;
   average_room_price: number;
   occupancy_rate: number;
-  created_by: string;
-  updated_by: string;
-  deleted_by: string;
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_by: string | null;
   is_active: boolean;
   is_deleted: boolean;
   created_at: string;
@@ -129,8 +172,8 @@ export interface Hotel {
   number_parks: number;
   number_halls: number;
   discount: number;
-  timezone: string;
-  directions: string;
+  timezone: string | null;
+  directions: string | null;
   is_superhost: boolean;
   is_eco_certified: boolean;
   max_discount_percent: number | null;
@@ -150,144 +193,4 @@ export interface Hotel {
   services: string[];
   facilities: string[];
   translations: string[];
-}
-
-// Interface for the paginated response structure for hotels
-export interface PaginatedHotelsResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Hotel[];
-}
-
-export interface HotelType {
-  id: string;
-  created_by: string | null;
-  updated_by: string | null;
-  deleted_by: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  name: string;
-  code: string;
-  description: string;
-  translation: string | null;
-}
-
-export interface HotelImage {
-  id: string;
-  hotel_name: string;
-  hotel_id: string;
-  category_name: string;
-  category_id: string;
-  thumbnails: null; // Or `any[]` or a more specific type if known
-  created_by: string | null;
-  updated_by: string | null;
-  deleted_by: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  tag: string;
-  original: string;
-  image_type: string;
-  is_primary: boolean;
-  caption: string | null;
-  category: string;
-  hotel: string;
-  translation: string | null;
-}
-
-export interface Region {
-  id: string;
-  country_name: string;
-  country_id: string;
-  hotel_count: number;
-  created_by: string | null;
-  updated_by: string | null;
-  deleted_by: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  name: string;
-  kind: string;
-  state_code: string | null;
-  country: string;
-}
-
-export interface Theme {
-  id: string;
-  translation_language: string | null;
-  translation_id: string | null;
-  hotel_count: number;
-  created_by: string | null;
-  updated_by: string | null;
-  deleted_by: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  name: string;
-  description: string;
-  translation: string | null;
-}
-
-export interface MealType {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-  score: number;
-  hotel_count: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-// New interfaces for Country, Service, and Translation
-export interface Country {
-  id: string;
-  name: string;
-  // Add other properties if available in the actual API response
-  // e.g., code: string;
-}
-
-export interface Service {
-  id: string;
-  created_by: string | null;
-  updated_by: string | null;
-  deleted_by: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  name: string;
-  description: string;
-  amendment: string | null;
-  icon: string | null;
-  service_type: string; // ID
-  service_scope: string; // ID
-  translation: string | null;
-}
-
-export interface Translation {
-  id: string;
-  country_id: string;
-  created_by: string | null;
-  updated_by: string | null;
-  deleted_by: string | null;
-  is_active: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  language: string;
-  country: string; // ID
 }
