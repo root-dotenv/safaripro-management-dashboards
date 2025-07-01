@@ -20,6 +20,7 @@ import Hotel from "../pages/hotel/hotel";
 import HotelServices from "../pages/hotel/hotel-services";
 import HotelAmenities from "../pages/hotel/hotel-amenities";
 import HotelEvents from "../pages/hotel/hotel-events";
+import HotelFacilities from "../pages/hotel/hotel-facilities";
 
 export default function AppRoutes() {
   return (
@@ -33,7 +34,7 @@ export default function AppRoutes() {
 
       {/* - - - Hotels Routes */}
       <Route path="/hotel/my-hotel" element={<Hotel />} />
-      <Route path="/hotel/hotel-facilities" element={<Hotel />} />
+      <Route path="/hotel/hotel-facilities" element={<HotelFacilities />} />
       <Route path="/hotel/hotel-services" element={<HotelServices />} />
       <Route path="/hotel/hotel-amenities" element={<HotelAmenities />} />
       <Route path="/hotel/hotel-events" element={<HotelEvents />} />

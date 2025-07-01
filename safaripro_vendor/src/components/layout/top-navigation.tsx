@@ -124,6 +124,10 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
             SafariPro
           </span> */}
         </div>
+        {/*  - - - Dynamic Header */}
+        {/* <div className="w-full col-span-5">
+          <p>Facilities</p>
+        </div> */}
         {/* - - -  & Action Button */}
         <div className="col-span-7 flex gap-x-[1rem] items-center justify-end">
           <button
