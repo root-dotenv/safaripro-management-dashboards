@@ -55,7 +55,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
               <IoArrowBack color="#FFF" size={18} />
             </button>
             <button className="cursor-pointer">
-              <IoArrowForward color="#8f8f8f" size={18} />
+              <IoArrowForward color="#FFF" size={18} />
             </button>
           </div>
           {/* Search bar input with icon */}
