@@ -47,16 +47,32 @@ interface RoomTypeOption {
   amenities: string[]; // This will be an array of amenity IDs
 }
 
-// Updated RoomData interface to include room_amenities
+// Updated RoomData interface to include room_amenities and other fields from GET response
 type RoomData = {
+  id: string; // Add ID from GET response
   code: string;
   room_type: string; // This will be the ID of the room type
-  price_per_night: number;
-  max_occupancy: number;
+  price_per_night: number; // Changed to number as per payload example
+  max_occupancy: number; // Changed to number as per payload example
   availability_status: string;
   image: string;
   description: string;
   room_amenities: string[]; // Array of amenity IDs
+  average_rating: string; // From GET response
+  review_count: number; // From GET response
+  hotel: string; // From GET response
+};
+
+// Define the shape of the form data state (inputs are strings)
+type FormDataState = {
+  code: string;
+  room_type: string;
+  price_per_night: string; // Kept as string for input
+  max_occupancy: string; // Kept as string for input
+  availability_status: string;
+  image: string;
+  description: string;
+  room_amenities: string[];
 };
 
 export default function EditRoomPage() {
@@ -64,11 +80,11 @@ export default function EditRoomPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Directly get hotel_id from environment variable
+  // Directly get hotel_id from environment variable (still needed for other requests/logic if any)
   const hotel_id = import.meta.env.VITE_HOTEL_ID;
 
   // State to manage form data (editable values)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataState>({
     code: "",
     room_type: "", // Will hold room type ID
     price_per_night: "",
@@ -76,7 +92,7 @@ export default function EditRoomPage() {
     availability_status: "",
     image: "",
     description: "",
-    room_amenities: [] as string[], // Initialize as empty array of strings
+    room_amenities: [], // Initialize as empty array of strings
   });
 
   // Define required fields for basic validation
@@ -86,15 +102,17 @@ export default function EditRoomPage() {
     "price_per_night",
     "max_occupancy",
     "availability_status",
+    "description", // Added description as required
+    "image", // Added image as required
   ];
 
-  // Basic form validation check
+  // Basic form validation check - ALL fields must be filled
   const isFormValid = useMemo(() => {
     return requiredFields.every((field) => {
       const value = (formData as any)[field];
-      // For room_amenities, check if it's an array, but not necessarily required to have items
-      if (field === "room_amenities") {
-        return Array.isArray(value);
+      // For arrays (like room_amenities), check if it's an array and not empty
+      if (Array.isArray(value)) {
+        return value.length > 0;
       }
       return value !== "" && value !== null && value !== undefined;
     });
@@ -161,38 +179,43 @@ export default function EditRoomPage() {
 
   // Mutation for updating the room
   const updateRoomMutation = useMutation({
-    mutationFn: async (updatedData: typeof formData) => {
+    mutationFn: async (updatedData: FormDataState) => {
+      // Now accepts full FormDataState
       if (!hotel_id) {
         throw new Error("Hotel ID is not available. Cannot update room.");
       }
 
-      // Construct payload as specified by ThunderClient example
+      // Construct payload with all formData fields, converting types as needed
       const payload = {
         code: updatedData.code,
         description: updatedData.description,
         image: updatedData.image,
-        max_occupancy: Number(updatedData.max_occupancy), // Ensure number if API expects
-        price_per_night: Number(updatedData.price_per_night), // Ensure number if API expects
+        max_occupancy: Number(updatedData.max_occupancy), // Convert to number
+        price_per_night: Number(updatedData.price_per_night), // Convert to number
         availability_status: updatedData.availability_status,
-        average_rating: "0.0", // Hardcoded as per ThunderClient example
-        review_count: 0, // Hardcoded as per ThunderClient example
         room_type: updatedData.room_type, // Send ID
-        hotel: hotel_id, // Send hotel ID
         room_amenities: updatedData.room_amenities, // Send array of IDs
+        // Include other fields expected by the backend for a full update, even if not directly editable in this form
+        // These might come from roomData if they are not editable but required for the PATCH payload
+        average_rating: roomData?.average_rating || "0.0", // Use original or default
+        review_count: roomData?.review_count || 0, // Use original or default
+        hotel: roomData?.hotel || hotel_id, // Use original or fallback to env hotel_id
       };
 
+      // Console log the payload being sent
+      console.log("PATCH Payload being sent (Full Update):", payload);
+
       const response = await hotelClient.patch(
-        `v1/rooms/${roomId}/?hotel_id=${hotel_id}`, // Use directly imported hotel_id
-        payload // Send the constructed payload
+        `v1/rooms/${roomId}/`, // Corrected URL: No hotel_id query param
+        payload // Send the entire constructed payload
       );
       return response.data;
     },
     onSuccess: () => {
       toast.success("Room updated successfully!");
-      // Invalidate relevant queries to refetch data after update
-      queryClient.invalidateQueries({ queryKey: ["rooms"] }); // Invalidate all rooms list
-      queryClient.invalidateQueries({ queryKey: ["room-detail", roomId] }); // Invalidate this specific room's detail
-      navigate("/rooms/all-rooms"); // Navigate back to all rooms page
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["room-detail", roomId] });
+      navigate("/rooms/all-rooms");
     },
     onError: (error: any) => {
       console.error("Failed to update room:", error);
@@ -239,15 +262,20 @@ export default function EditRoomPage() {
   // Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isFormValid) {
-      if (hotel_id) {
-        updateRoomMutation.mutate(formData);
-      } else {
-        toast.error("Hotel ID is not available. Cannot update room.");
-      }
-    } else {
-      toast.error("Please fill in all required fields.");
+
+    if (!isFormValid) {
+      // Re-added check for full form validity
+      toast.error("Please fill in all required fields before saving.");
+      return;
     }
+
+    if (updateRoomMutation.isLoading) {
+      // Prevent double submission
+      return;
+    }
+
+    // Send the entire formData object
+    updateRoomMutation.mutate(formData);
   };
 
   // --- Render Loading State for all dependencies ---
@@ -293,6 +321,7 @@ export default function EditRoomPage() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
+              {/* This indicator now shows if the form is valid (all required fields filled) */}
               <div
                 className={`h-3 w-3 rounded-full ${
                   isFormValid ? "bg-[#04C604]" : "bg-red-500"
@@ -393,7 +422,7 @@ export default function EditRoomPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow mb-6 border border-[#E7EBF5]">
+        <div className="bg-white rounded-lg shadow mb-6 p-6 border border-[#E7EBF5]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Room Details */}
             <h2 className="text-xl font-semibold text-[#334155] border-b border-[#E8E8E8] pb-3 mb-4">
@@ -415,7 +444,7 @@ export default function EditRoomPage() {
                   value={formData.code}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                  required
+                  required // Re-added 'required' attribute
                 />
               </div>
               <div>
@@ -432,7 +461,7 @@ export default function EditRoomPage() {
                   value={formData.room_type}
                   onChange={handleInputChange}
                   className="w-full p-2.5 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                  required
+                  required // Re-added 'required' attribute
                 >
                   <option value="">Select room type</option>
                   {roomTypeOptions?.map((type) => (
@@ -457,7 +486,7 @@ export default function EditRoomPage() {
                   value={formData.price_per_night}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                  required
+                  required // Re-added 'required' attribute
                   step="0.01"
                   min="0"
                 />
@@ -477,7 +506,7 @@ export default function EditRoomPage() {
                   value={formData.max_occupancy}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                  required
+                  required // Re-added 'required' attribute
                   min="1"
                 />
               </div>
@@ -495,6 +524,7 @@ export default function EditRoomPage() {
                     <input
                       type="checkbox"
                       id={`amenity-${amenity.id}`}
+                      name="room_amenities" // Name for grouping checkboxes
                       value={amenity.id}
                       checked={formData.room_amenities.includes(amenity.id)} // Pre-select based on formData
                       onChange={handleAmenityChange}
@@ -530,7 +560,7 @@ export default function EditRoomPage() {
                   value={formData.availability_status}
                   onChange={handleInputChange}
                   className="w-full p-2.5 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                  required
+                  required // Re-added 'required' attribute
                 >
                   <option value="">Select Status</option>
                   <option value="Available">Available</option>
@@ -544,7 +574,7 @@ export default function EditRoomPage() {
                   className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
                   <FaImage className="inline mr-2 text-[#838383]" />
-                  Image URL
+                  Image URL *
                 </label>
                 <input
                   type="url"
@@ -553,6 +583,7 @@ export default function EditRoomPage() {
                   value={formData.image}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  required // Re-added 'required' attribute
                 />
               </div>
             </div>
@@ -575,7 +606,7 @@ export default function EditRoomPage() {
                   className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
                   <FaAlignLeft className="inline mr-2 text-[#838383]" />
-                  Description
+                  Description *
                 </label>
                 <textarea
                   id="description"
@@ -584,6 +615,7 @@ export default function EditRoomPage() {
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] resize-none bg-[#F8FAFC] text-[#202020]"
+                  required // Re-added 'required' attribute
                 ></textarea>
               </div>
             </div>
@@ -599,7 +631,7 @@ export default function EditRoomPage() {
               </button>
               <button
                 type="submit"
-                disabled={!isFormValid || updateRoomMutation.isLoading}
+                disabled={!isFormValid || updateRoomMutation.isLoading} // Disabled if not valid OR loading
                 className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center ${
                   isFormValid && !updateRoomMutation.isLoading
                     ? "bg-[#553ED0] hover:bg-[#432DBA] text-white shadow"
