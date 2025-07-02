@@ -2,9 +2,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "sonner"; // Use sonner for toasts
 import {
   FaCode,
   FaTag,
@@ -16,25 +14,69 @@ import {
   FaSave,
   FaBan,
   FaSpinner,
-} from "react-icons/fa"; // Imported React Icons
-import { useHotel } from "../../providers/hotel-provider";
+  FaExclamationCircle, // Added for error messages
+} from "react-icons/fa";
+import hotelClient from "../../api/hotel-client"; // Import hotelClient
+
+// --- TYPE DEFINITIONS ---
+// Define the shape of an Amenity fetched from the API
+interface Amenity {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  icon: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Define the shape of a RoomType fetched from the API
+interface RoomTypeOption {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  max_occupancy: number;
+  bed_type: string;
+  room_availability: number;
+  image: string;
+  size_sqm: number | null;
+  base_price: string;
+  is_active: boolean;
+  amenities: string[]; // This will be an array of amenity IDs
+}
+
+// Updated RoomData interface to include room_amenities
+type RoomData = {
+  code: string;
+  room_type: string; // This will be the ID of the room type
+  price_per_night: number;
+  max_occupancy: number;
+  availability_status: string;
+  image: string;
+  description: string;
+  room_amenities: string[]; // Array of amenity IDs
+};
 
 export default function EditRoomPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { hotel } = useHotel();
+  // Directly get hotel_id from environment variable
+  const hotel_id = import.meta.env.VITE_HOTEL_ID;
 
-  // State to manage form data
+  // State to manage form data (editable values)
   const [formData, setFormData] = useState({
     code: "",
-    room_type: "",
+    room_type: "", // Will hold room type ID
     price_per_night: "",
     max_occupancy: "",
     availability_status: "",
     image: "",
     description: "",
+    room_amenities: [] as string[], // Initialize as empty array of strings
   });
 
   // Define required fields for basic validation
@@ -49,59 +91,110 @@ export default function EditRoomPage() {
   // Basic form validation check
   const isFormValid = useMemo(() => {
     return requiredFields.every((field) => {
-      const value = (formData as any)[field]; // Use 'any' to bypass TS error on dynamic access
+      const value = (formData as any)[field];
+      // For room_amenities, check if it's an array, but not necessarily required to have items
+      if (field === "room_amenities") {
+        return Array.isArray(value);
+      }
       return value !== "" && value !== null && value !== undefined;
     });
   }, [formData]);
 
-  // Fetch specific room data
+  // Fetch specific room data (original values)
   const {
-    data: roomData,
+    data: roomData, // This holds the original fetched room details
     isLoading: isRoomLoading,
     isError: isRoomError,
     error: roomError,
-  } = useQuery({
+  } = useQuery<RoomData>({
     queryKey: ["room-detail", roomId],
     queryFn: async () => {
-      const response = await axios.get(
-        `https://hotel.tradesync.software/api/v1/rooms/${roomId}/` // Hardcoded URL as requested
-      );
+      const response = await hotelClient.get(`v1/rooms/${roomId}/`);
       return response.data;
     },
-    enabled: !!roomId,
+    enabled: !!roomId, // Only run this query if roomId is available
     onSuccess: (data) => {
+      // Populate form data with fetched room details
       setFormData({
         code: data.code || "",
-        room_type: data.room_type || "",
-        price_per_night: data.price_per_night || "",
-        max_occupancy: data.max_occupancy || "",
+        room_type: data.room_type || "", // Assuming room_type is a string ID here
+        price_per_night: String(data.price_per_night) || "", // Ensure it's a string for input
+        max_occupancy: String(data.max_occupancy) || "", // Ensure it's a string for input
         availability_status: data.availability_status || "",
         image: data.image || "",
         description: data.description || "",
+        room_amenities: data.room_amenities || [], // Populate amenities
       });
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
+  });
+
+  // --- Fetch Room Types ---
+  const {
+    data: roomTypeOptions,
+    isLoading: isLoadingRoomTypes,
+    isError: isErrorRoomTypes,
+    error: roomTypesError,
+  } = useQuery<RoomTypeOption[]>({
+    queryKey: ["allRoomTypes"],
+    queryFn: async () => {
+      const response = await hotelClient.get(`v1/room-types/`); // Fetch all room types
+      return response.data.results;
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+
+  // --- Fetch All Amenities ---
+  const {
+    data: allAmenities,
+    isLoading: isLoadingAmenities,
+    isError: isErrorAmenities,
+    error: amenitiesError,
+  } = useQuery<Amenity[]>({
+    queryKey: ["allAmenities"],
+    queryFn: async () => {
+      const response = await hotelClient.get(`v1/amenities/`); // Fetch all amenities
+      return response.data.results;
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   // Mutation for updating the room
   const updateRoomMutation = useMutation({
     mutationFn: async (updatedData: typeof formData) => {
-      // Type updatedData
-      // Hardcoded base URL and added hotel_id as a query parameter for PATCH request
-      const response = await axios.patch(
-        `https://hotel.tradesync.software/api/v1/rooms/${roomId}/?hotel_id=${hotel.id}`,
-        updatedData
+      if (!hotel_id) {
+        throw new Error("Hotel ID is not available. Cannot update room.");
+      }
+
+      // Construct payload as specified by ThunderClient example
+      const payload = {
+        code: updatedData.code,
+        description: updatedData.description,
+        image: updatedData.image,
+        max_occupancy: Number(updatedData.max_occupancy), // Ensure number if API expects
+        price_per_night: Number(updatedData.price_per_night), // Ensure number if API expects
+        availability_status: updatedData.availability_status,
+        average_rating: "0.0", // Hardcoded as per ThunderClient example
+        review_count: 0, // Hardcoded as per ThunderClient example
+        room_type: updatedData.room_type, // Send ID
+        hotel: hotel_id, // Send hotel ID
+        room_amenities: updatedData.room_amenities, // Send array of IDs
+      };
+
+      const response = await hotelClient.patch(
+        `v1/rooms/${roomId}/?hotel_id=${hotel_id}`, // Use directly imported hotel_id
+        payload // Send the constructed payload
       );
       return response.data;
     },
     onSuccess: () => {
       toast.success("Room updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["all-rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["room-detail", roomId] });
-      navigate("/rooms/all-rooms");
+      // Invalidate relevant queries to refetch data after update
+      queryClient.invalidateQueries({ queryKey: ["rooms"] }); // Invalidate all rooms list
+      queryClient.invalidateQueries({ queryKey: ["room-detail", roomId] }); // Invalidate this specific room's detail
+      navigate("/rooms/all-rooms"); // Navigate back to all rooms page
     },
     onError: (error: any) => {
-      // Type error
       console.error("Failed to update room:", error);
       toast.error(
         `Failed to update room: ${
@@ -111,22 +204,43 @@ export default function EditRoomPage() {
     },
   });
 
+  // Handle input changes for form fields
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
-    const { name, value } = e.target; // Removed type and checked as they are not universally applicable
+    const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
   };
 
+  // Handle checkbox changes for amenities
+  const handleAmenityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    setFormData((prevData) => {
+      const currentAmenities = prevData.room_amenities || [];
+      if (checked) {
+        return {
+          ...prevData,
+          room_amenities: [...currentAmenities, value],
+        };
+      } else {
+        return {
+          ...prevData,
+          room_amenities: currentAmenities.filter((id) => id !== value),
+        };
+      }
+    });
+  };
+
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isFormValid) {
-      if (hotel.id) {
+      if (hotel_id) {
         updateRoomMutation.mutate(formData);
       } else {
         toast.error("Hotel ID is not available. Cannot update room.");
@@ -136,39 +250,45 @@ export default function EditRoomPage() {
     }
   };
 
-  if (isRoomLoading) {
+  // --- Render Loading State for all dependencies ---
+  if (isRoomLoading || isLoadingRoomTypes || isLoadingAmenities) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F8FAFB] dark:bg-gray-900">
-        <div className="text-lg text-gray-700 dark:text-gray-300 flex items-center">
-          <FaSpinner className="animate-spin mr-3 text-2xl text-[#0078D3] dark:text-[#4FD8EF]" />
-          Loading room details...
+      <div className="flex items-center justify-center min-h-screen bg-[#F8FAFB]">
+        <div className="text-lg text-[#334155] flex items-center">
+          <FaSpinner className="animate-spin mr-3 text-2xl text-[#553ED0]" />
+          Loading room details and options...
         </div>
       </div>
     );
   }
 
-  if (isRoomError) {
+  // --- Render Error State for all dependencies ---
+  if (isRoomError || isErrorRoomTypes || isErrorAmenities) {
+    const errorMessage =
+      roomError?.message ||
+      roomTypesError?.message ||
+      amenitiesError?.message ||
+      "Unknown error loading data.";
     return (
-      <div className="flex items-center justify-center min-h-screen bg-red-50 dark:bg-red-950">
-        <div className="text-red-600 dark:text-red-400 text-lg flex items-center">
+      <div className="flex items-center justify-center min-h-screen bg-[#FEF2F2]">
+        <div className="text-[#EF4444] text-lg flex items-center">
           <FaExclamationCircle className="mr-3 text-2xl" />
-          Error loading room details: {roomError?.message}
+          Error: {errorMessage}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFB] dark:bg-gray-900">
+    <div className="min-h-screen bg-[#F8FAFB]">
       <div className="max-w-4xl mx-auto p-6 lg:p-8">
-        {/* Form Header */}
-        <div className="bg-[#F3F5F7] dark:bg-gray-800 rounded-lg shadow mb-6 p-6 border border-[#E7EBF5] dark:border-gray-700">
+        <div className="bg-[#F3F5F7] rounded-lg shadow mb-6 p-6 border border-[#E7EBF5]">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-2xl font-bold text-[#202020]">
                 Edit Room: {formData.code || "Loading..."}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-[#6B7280] mt-1">
                 Update the details for this room
               </p>
             </div>
@@ -178,27 +298,114 @@ export default function EditRoomPage() {
                   isFormValid ? "bg-[#04C604]" : "bg-red-500"
                 }`}
               ></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-[#6B7280]">
                 {isFormValid ? "Form Valid" : "Form Invalid"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Main Form Body */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 border border-[#E7EBF5] dark:border-gray-700">
+        {roomData && (
+          <div className="bg-white rounded-lg shadow mb-6 p-6 border border-[#E7EBF5]">
+            <h2 className="text-xl font-semibold text-[#334155] border-b border-[#E8E8E8] pb-3 mb-4">
+              Original Room Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8]">
+                <span className="font-medium text-[#6B7280]">Room Number:</span>
+                <p className="mt-1 text-[#202020]">{roomData.code || "N/A"}</p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8]">
+                <span className="font-medium text-[#6B7280]">Room Type:</span>
+                <p className="mt-1 text-[#202020]">
+                  {roomTypeOptions?.find(
+                    (type) => type.id === roomData.room_type
+                  )?.name ||
+                    roomData.room_type ||
+                    "N/A"}
+                </p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8]">
+                <span className="font-medium text-[#6B7280]">
+                  Price Per Night:
+                </span>
+                <p className="mt-1 text-[#202020]">
+                  $
+                  {parseFloat(String(roomData.price_per_night) || "0").toFixed(
+                    2
+                  )}
+                </p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8]">
+                <span className="font-medium text-[#6B7280]">
+                  Max Occupancy:
+                </span>
+                <p className="mt-1 text-[#202020]">
+                  {roomData.max_occupancy || "N/A"} guests
+                </p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8]">
+                <span className="font-medium text-[#6B7280]">
+                  Availability:
+                </span>
+                <p className="mt-1 text-[#202020]">
+                  {roomData.availability_status || "N/A"}
+                </p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8] col-span-full">
+                <span className="font-medium text-[#6B7280]">Description:</span>
+                <p className="mt-1 text-[#202020]">
+                  {roomData.description || "No description provided."}
+                </p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8] col-span-full">
+                <span className="font-medium text-[#6B7280]">Amenities:</span>
+                <p className="mt-1 text-[#202020]">
+                  {roomData.room_amenities && roomData.room_amenities.length > 0
+                    ? roomData.room_amenities
+                        .map(
+                          (id) => allAmenities?.find((a) => a.id === id)?.name
+                        )
+                        .filter(Boolean)
+                        .join(", ")
+                    : "No amenities listed"}
+                </p>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E8E8E8] col-span-full">
+                <span className="font-medium text-[#6B7280]">Image URL:</span>
+                <p className="mt-1 text-[#202020] break-all">
+                  {roomData.image || "No image URL."}
+                </p>
+              </div>
+            </div>
+            {roomData.image && (
+              <div className="mt-4 p-3 bg-[#F8FAFC] rounded-lg border border-[#E8E8E8]">
+                <span className="block text-sm font-medium text-[#6B7280] mb-1">
+                  Original Image Preview:
+                </span>
+                <img
+                  src={roomData.image}
+                  alt="Original Room Preview"
+                  className="h-32 w-auto object-cover rounded-md border border-[#E8E8E8]"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow mb-6 border border-[#E7EBF5]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Room Details */}
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
-              Room Details
+            <h2 className="text-xl font-semibold text-[#334155] border-b border-[#E8E8E8] pb-3 mb-4">
+              Edit Room Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
                   htmlFor="code"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaCode className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaCode className="inline mr-2 text-[#838383]" />
                   Room Number *
                 </label>
                 <input
@@ -207,34 +414,40 @@ export default function EditRoomPage() {
                   name="code"
                   value={formData.code}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
                 />
               </div>
               <div>
                 <label
                   htmlFor="room_type"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaTag className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaTag className="inline mr-2 text-[#838383]" />
                   Room Type *
                 </label>
-                <input
-                  type="text"
+                <select
                   id="room_type"
                   name="room_type"
                   value={formData.room_type}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2.5 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
-                />
+                >
+                  <option value="">Select room type</option>
+                  {roomTypeOptions?.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label
                   htmlFor="price_per_night"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaDollarSign className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaDollarSign className="inline mr-2 text-[#838383]" />
                   Price Per Night ($) *
                 </label>
                 <input
@@ -243,7 +456,7 @@ export default function EditRoomPage() {
                   name="price_per_night"
                   value={formData.price_per_night}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
                   step="0.01"
                   min="0"
@@ -252,9 +465,9 @@ export default function EditRoomPage() {
               <div>
                 <label
                   htmlFor="max_occupancy"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaUsers className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaUsers className="inline mr-2 text-[#838383]" />
                   Max Occupancy *
                 </label>
                 <input
@@ -263,24 +476,52 @@ export default function EditRoomPage() {
                   name="max_occupancy"
                   value={formData.max_occupancy}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
                   min="1"
                 />
               </div>
             </div>
 
+            {/* Room Amenities Checkboxes */}
+            <div>
+              <label className="block text-sm font-medium text-[#6B7280] mb-2">
+                <FaCheckCircle className="inline mr-2 text-[#838383]" />
+                Room Amenities
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-[#F8FAFC] p-4 rounded-lg border border-[#E8E8E8]">
+                {allAmenities?.map((amenity) => (
+                  <div key={amenity.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`amenity-${amenity.id}`}
+                      value={amenity.id}
+                      checked={formData.room_amenities.includes(amenity.id)} // Pre-select based on formData
+                      onChange={handleAmenityChange}
+                      className="h-4 w-4 text-[#553ED0] border-gray-300 rounded focus:ring-[#553ED0]"
+                    />
+                    <label
+                      htmlFor={`amenity-${amenity.id}`}
+                      className="ml-2 text-sm text-[#202020] cursor-pointer"
+                    >
+                      {amenity.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Other Details */}
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 pb-3 mb-4">
+            <h2 className="text-xl font-semibold text-[#334155] border-t border-[#E8E8E8] pt-6 mt-6 pb-3 mb-4">
               Other Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
                   htmlFor="availability_status"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaCheckCircle className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaCheckCircle className="inline mr-2 text-[#838383]" />
                   Availability Status *
                 </label>
                 <select
@@ -288,22 +529,21 @@ export default function EditRoomPage() {
                   name="availability_status"
                   value={formData.availability_status}
                   onChange={handleInputChange}
-                  className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2.5 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
                 >
                   <option value="">Select Status</option>
                   <option value="Available">Available</option>
-                  <option value="Occupied">Occupied</option>
-                  <option value="Under Maintenance">Under Maintenance</option>
-                  {/* Add other statuses as per your backend model */}
+                  <option value="Booked">Booked</option>
+                  <option value="Maintenance">Maintenance</option>
                 </select>
               </div>
               <div>
                 <label
                   htmlFor="image"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaImage className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaImage className="inline mr-2 text-[#838383]" />
                   Image URL
                 </label>
                 <input
@@ -312,29 +552,29 @@ export default function EditRoomPage() {
                   name="image"
                   value={formData.image}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-6">
               {formData.image && (
-                <div className="mt-2 p-3 bg-[#F2F7FA] dark:bg-gray-700 rounded-lg border border-[#EEF6FF] dark:border-gray-600">
-                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <div className="mt-2 p-3 bg-[#F2F7FA] rounded-lg border border-[#EEF6FF]">
+                  <span className="block text-sm font-medium text-[#6B7280] mb-1">
                     Image Preview:
                   </span>
                   <img
                     src={formData.image}
                     alt="Room Preview"
-                    className="h-32 w-auto object-cover rounded-md shadow border border-gray-300 dark:border-gray-600"
+                    className="h-32 w-auto object-cover rounded-md border border-[#E8E8E8]"
                   />
                 </div>
               )}
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  <FaAlignLeft className="inline mr-2 text-gray-500 dark:text-gray-400" />
+                  <FaAlignLeft className="inline mr-2 text-[#838383]" />
                   Description
                 </label>
                 <textarea
@@ -343,7 +583,7 @@ export default function EditRoomPage() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#0078D3] focus:border-[#0078D3] resize-none bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] resize-none bg-[#F8FAFC] text-[#202020]"
                 ></textarea>
               </div>
             </div>
@@ -353,7 +593,7 @@ export default function EditRoomPage() {
               <button
                 type="button"
                 onClick={() => navigate("/rooms/all-rooms")}
-                className="px-6 py-2 rounded-lg font-medium transition-colors bg-[#F2F7FA] hover:bg-gray-200 text-gray-700 shadow dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
+                className="px-6 py-2 rounded-lg font-medium transition-colors bg-[#F2F7FA] hover:bg-gray-200 text-[#6B7280] shadow"
               >
                 <FaBan className="inline mr-2" /> Cancel
               </button>
@@ -362,9 +602,9 @@ export default function EditRoomPage() {
                 disabled={!isFormValid || updateRoomMutation.isLoading}
                 className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center ${
                   isFormValid && !updateRoomMutation.isLoading
-                    ? "bg-[#0B9EFF] hover:bg-blue-700 text-white shadow"
+                    ? "bg-[#553ED0] hover:bg-[#432DBA] text-white shadow"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                } dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-gray-100 dark:disabled:bg-gray-700`}
+                }`}
               >
                 {updateRoomMutation.isLoading ? (
                   <>
@@ -380,65 +620,65 @@ export default function EditRoomPage() {
           </form>
         </div>
 
-        {/* Form Footer - Room Preview */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-[#E7EBF5] dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Room Preview
+        {/* Current Form Data (Edited Values) Preview */}
+        <div className="bg-white rounded-lg shadow mb-6 p-6 border border-[#E7EBF5]">
+          <h3 className="text-lg font-semibold text-[#202020] mb-4">
+            Current Form Data (Edited Values)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
-                Room Number:
-              </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200">
-                {formData.code || "N/A"}
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF]">
+              <span className="font-medium text-[#6B7280]">Room Number:</span>
+              <p className="mt-1 text-[#202020]">{formData.code || "N/A"}</p>
+            </div>
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF]">
+              <span className="font-medium text-[#6B7280]">Room Type:</span>
+              <p className="mt-1 text-[#202020]">
+                {roomTypeOptions?.find((type) => type.id === formData.room_type)
+                  ?.name ||
+                  formData.room_type ||
+                  "N/A"}
               </p>
             </div>
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
-                Room Type:
-              </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200">
-                {formData.room_type || "N/A"}
-              </p>
-            </div>
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF]">
+              <span className="font-medium text-[#6B7280]">
                 Price Per Night:
               </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200">
+              <p className="mt-1 text-[#202020]">
                 ${parseFloat(formData.price_per_night || "0").toFixed(2)}
               </p>
             </div>
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
-                Max Occupancy:
-              </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200">
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF]">
+              <span className="font-medium text-[#6B7280]">Max Occupancy:</span>
+              <p className="mt-1 text-[#202020]">
                 {formData.max_occupancy || "N/A"} guests
               </p>
             </div>
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
-                Availability:
-              </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200">
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF]">
+              <span className="font-medium text-[#6B7280]">Availability:</span>
+              <p className="mt-1 text-[#202020]">
                 {formData.availability_status || "N/A"}
               </p>
             </div>
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600 col-span-full">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
-                Description:
-              </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200">
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF] col-span-full">
+              <span className="font-medium text-[#6B7280]">Description:</span>
+              <p className="mt-1 text-[#202020]">
                 {formData.description || "No description provided."}
               </p>
             </div>
-            <div className="bg-[#F2F7FA] dark:bg-gray-700 p-3 rounded-lg border border-[#EEF6FF] dark:border-gray-600 col-span-full">
-              <span className="font-medium text-gray-600 dark:text-gray-400">
-                Image URL:
-              </span>
-              <p className="mt-1 text-gray-900 dark:text-gray-200 break-all">
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF] col-span-full">
+              <span className="font-medium text-[#6B7280]">Amenities:</span>
+              <p className="mt-1 text-[#202020]">
+                {formData.room_amenities && formData.room_amenities.length > 0
+                  ? formData.room_amenities
+                      .map((id) => allAmenities?.find((a) => a.id === id)?.name)
+                      .filter(Boolean)
+                      .join(", ")
+                  : "No amenities selected"}
+              </p>
+            </div>
+            <div className="bg-[#F2F7FA] p-3 rounded-lg border border-[#EEF6FF] col-span-full">
+              <span className="font-medium text-[#6B7280]">Image URL:</span>
+              <p className="mt-1 text-[#202020] break-all">
                 {formData.image || "No image URL."}
               </p>
             </div>
