@@ -3,7 +3,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { BiHotel } from "react-icons/bi";
 import { BsArrowsCollapseVertical } from "react-icons/bs";
-import { TbBuildingPlus, TbHelp } from "react-icons/tb";
+import { TbBuildingPlus, TbHelp, TbSitemap } from "react-icons/tb";
 import { GoChecklist } from "react-icons/go";
 import { PiDotsSixVertical } from "react-icons/pi";
 import { MdDomainAdd } from "react-icons/md";
@@ -129,16 +129,23 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
               onToggle={() => toggleSubmenu("rooms")}
             >
               <SidebarLink
-                to="/rooms/room-types"
-                icon={<VscTypeHierarchySuper color="#404042" size={19} />}
-                text="Room Types"
+                to="/rooms/add-room"
+                icon={<TbBuildingPlus color="#404042" size={19} />}
+                text="Add Room"
                 collapsed={collapsed}
                 isSubLink
               />
               <SidebarLink
-                to="/rooms/new-room-types"
-                icon={<TbBuildingPlus size={19} color="#404042" />}
-                text="New Room-Types"
+                to="/rooms/room-types"
+                icon={<TbSitemap size={19} color="#404042" />}
+                text="Room-Types"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/rooms/all-rooms"
+                icon={<PiDotsSixVertical size={19} color="#404042" />}
+                text="All Rooms"
                 collapsed={collapsed}
                 isSubLink
               />

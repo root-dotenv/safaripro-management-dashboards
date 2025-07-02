@@ -21,6 +21,11 @@ import HotelServices from "../pages/hotel/hotel-services";
 import HotelAmenities from "../pages/hotel/hotel-amenities";
 import HotelEvents from "../pages/hotel/hotel-events";
 import HotelFacilities from "../pages/hotel/hotel-facilities";
+import AddRoom from "../pages/rooms/add-room";
+import RoomTypes from "../pages/rooms/room-types";
+import AllRooms from "../pages/rooms/all-rooms";
+import EditRoomPage from "../pages/rooms/edit-room";
+import RoomDetailsPage from "../pages/rooms/room-details-page";
 
 export default function AppRoutes() {
   return (
@@ -31,7 +36,6 @@ export default function AppRoutes() {
       {/* <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/financial" element={<FinancialPage />} />
       <Route path="/reports" element={<ReportsPage />} /> */}
-
       {/* - - - Hotels Routes */}
       <Route path="/hotel/my-hotel" element={<Hotel />} />
       <Route path="/hotel/hotel-facilities" element={<HotelFacilities />} />
@@ -43,12 +47,14 @@ export default function AppRoutes() {
         element={<EditHotelType />}
       /> */}
       {/* <Route path="/hotels/edit/:hotelId" element={<NewHotelType />} /> */}
-
       {/* - - - Rooms Routes */}
-      {/* <Route path="/rooms/room-types" element={<RoomTypes />} />
-      <Route path="/rooms/new-room-types" element={<NewRoomTypes />} />
-      <Route path="/rooms/edit/:room_type_id" element={<EditRoomType />} /> */}
-      {/* <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} /> */}
+      <Route path="/rooms/add-room" element={<AddRoom />} />
+      <Route path="/rooms/room-types" element={<RoomTypes />} />
+      <Route path="/rooms/all-rooms" element={<AllRooms />} />
+      <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} />
+      <Route path="/rooms/details/:roomId" element={<RoomDetailsPage />} />
+      {/* New route for room details */}
+      {/* <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} />   */}
       {/* - - - Bookings Routes */}
       {/* <Route path="/bookings/all-bookings" element={<AllBookings />} />
       <Route
@@ -60,7 +66,6 @@ export default function AppRoutes() {
       {/* <Route path="/amenities/all-amenities" element={<Amenities />} />
       <Route path="/amenities/new-amenity" element={<NewAmenity />} />
       <Route path="/amenities/edit/:amenity_id" element={<EditAmenity />} /> */}
-
       {/* - - - Facilities Routes */}
       {/* <Route path="/facilities/all-facilities" element={<Facilities />} />
       <Route path="/facilities/new-facility" element={<NewFacility />} />
