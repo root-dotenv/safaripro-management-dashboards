@@ -15,7 +15,12 @@ import {
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { CoffeeIcon, SnowflakeIcon } from "lucide-react";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaInfoCircle, FaSpinner } from "react-icons/fa"; // Added FaSpinner for loading state
+import {
+  IoAdd,
+  IoChevronBackOutline,
+  IoChevronForwardOutline,
+} from "react-icons/io5"; // Added for consistent header nav buttons
 import hotelClient from "../../api/hotel-client";
 
 // Define the Room interface again or import it if shared
@@ -69,7 +74,8 @@ export default function RoomDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#F8FAFC]">
-        <div className="text-lg font-semibold text-[#334155]">
+        <div className="text-lg font-semibold text-[#334155] flex items-center">
+          <FaSpinner className="animate-spin mr-3 text-2xl text-[#553ED0]" />
           Loading room details...
         </div>
       </div>
@@ -79,7 +85,8 @@ export default function RoomDetailsPage() {
   if (isError) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#FEF2F2] text-[#EF4444]">
-        <div className="text-lg font-semibold">
+        <div className="text-lg font-semibold flex items-center">
+          <IoAdd className="mr-3 text-2xl" />
           Error loading room details: {error?.message}
         </div>
         <button
@@ -95,7 +102,8 @@ export default function RoomDetailsPage() {
   if (!room) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#F8FAFC]">
-        <div className="text-lg font-semibold text-[#334155]">
+        <div className="text-lg font-semibold text-[#334155] flex items-center">
+          <FaInfoCircle className="mr-3 text-2xl text-[#2196F3]" />
           Room not found.
         </div>
         <button
@@ -109,21 +117,31 @@ export default function RoomDetailsPage() {
   }
 
   return (
-    <div className="w-full h-full min-h-screen px-4 py-4 bg-[#F8FAFC]">
-      <div className="flex items-center gap-x-4 mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
-        >
-          <FaArrowLeft className="h-5 w-5 text-[#646464]" />
-        </button>
-        <h1 className="text-[1.375rem] text-[#202020] font-bold">
-          Room Details: {room.room_type_name} (Code: {room.code})
-        </h1>
+    <div className="w-full h-full min-h-screen px-6 py-5 bg-[#F8FAFC]">
+      {" "}
+      {/* Adjusted padding */}
+      {/* Section Header - Consistent with AllRooms and AddRoom */}
+      <div className="w-full py-4">
+        <div className="flex items-center gap-x-4">
+          <div className="flex items-center gap-2.5 ">
+            {/* These buttons don't have navigate logic here, just for consistent styling */}
+            <button>
+              <IoChevronBackOutline color="#646464" size={18} />
+            </button>
+            <button>
+              <IoChevronForwardOutline color="#646464" size={18} />
+            </button>
+          </div>
+          <h1 className="text-[1.375rem] text-[#202020] font-bold text-center">
+            Room Details: {room.room_type_name} (Code: {room.code})
+          </h1>
+        </div>
+        <p className="text-[#202020] text-[0.9375rem] font-medium mt-1 flex items-center">
+          <FaInfoCircle className="mr-1.5 opacity-70" size={14} />
+          View comprehensive details about this specific room.
+        </p>
       </div>
-
-      <div className="bg-white rounded-xl shadow-md p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="bg-white rounded-xl shadow p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Image & Description */}
         <div className="space-y-6">
           <div className="relative rounded-xl overflow-hidden bg-gray-100 aspect-[4/3] border border-[#E8E8E8]">
@@ -222,7 +240,7 @@ export default function RoomDetailsPage() {
                     key={amenity.id}
                     className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-[#E8E8E8]"
                   >
-                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                    <div className="bg-white p-2 rounded-lg shadow">
                       {amenityIcons[amenity.name] || (
                         <CheckBadgeIcon className="h-5 w-5 text-[#553ED0]" />
                       )}

@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useMutation, useQuery } from "@tanstack/react-query"; // Import useQuery
+import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
 import {
   FaCode,
   FaFileAlt,
@@ -14,6 +15,7 @@ import {
   FaSpinner,
   FaTags,
 } from "react-icons/fa";
+import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5"; // Added for header
 import { useHotel } from "../../providers/hotel-provider";
 import hotelClient from "../../api/hotel-client"; // Use the configured hotelClient
 
@@ -115,6 +117,7 @@ const createRoom = async (
 };
 
 export default function AddRoom() {
+  const navigate = useNavigate(); // Initialize useNavigate
   const { hotel, loading: hotelLoading, error: hotelError } = useHotel(); // Destructure loading and error
 
   // --- Fetch Room Types ---
@@ -181,12 +184,13 @@ export default function AddRoom() {
     },
     onSuccess: (data) => {
       console.log("Room created successfully:", data);
-      alert("Room created successfully!");
-      reset();
+      toast.success("Room created successfully!"); // Use toast from sonner
+      reset(); // Reset the form fields
+      navigate("/rooms/all-rooms"); // Redirect to all-rooms page
     },
     onError: (error: any) => {
       console.error("Error creating room:", error);
-      alert(
+      toast.error(
         `Error creating room: ${error.response?.data?.detail || error.message}`
       );
     },
@@ -268,28 +272,27 @@ export default function AddRoom() {
   return (
     <div className="min-h-screen bg-[#F8FAFB] dark:bg-gray-900">
       <div className="max-w-4xl mx-auto p-6 lg:p-8">
-        {/* Form Header */}
-        <div className="bg-[#F3F5F7] dark:bg-gray-800 rounded-lg shadow mb-6 p-6 border border-[#E7EBF5] dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Add New Room
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Create a new room for your hotel
-              </p>
+        {/* Section Header */}
+        <div className="w-full px-4 py-4">
+          <div className="flex items-center gap-x-4">
+            <div className="flex items-center gap-2.5 ">
+              {/* These buttons don't have navigate logic here, just for consistent styling */}
+              <button>
+                <IoChevronBackOutline color="#646464" size={18} />
+              </button>
+              <button>
+                <IoChevronForwardOutline color="#646464" size={18} />
+              </button>
             </div>
-            <div className="flex items-center space-x-2">
-              <div
-                className={`h-3 w-3 rounded-full ${
-                  isFormValid ? "bg-[#04C604]" : "bg-red-500"
-                }`}
-              ></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {isFormValid ? "Form Valid" : "Form Invalid"}
-              </span>
-            </div>
+            <h1 className="text-[1.375rem] text-[#202020] font-bold text-center">
+              Add New Room
+            </h1>
           </div>
+          <p className="text-[#202020] text-[0.9375rem] font-medium mt-1 flex items-center">
+            <FaInfoCircle className="mr-1.5 opacity-70" size={14} />
+            Fill in the details to add a new room to your hotel. All fields are
+            required.
+          </p>
         </div>
 
         {/* Main Form */}
