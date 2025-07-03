@@ -17,8 +17,9 @@ import {
   FaCheckCircle,
   FaStar,
   FaInfoCircle,
+  FaSyncAlt, // Added for refetch button
 } from "react-icons/fa";
-import { toast } from "sonner";
+import { toast } from "sonner"; // Assuming 'sonner' for toast notifications
 import { FiAlertTriangle } from "react-icons/fi";
 import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
 import hotelClient from "../../api/hotel-client";
@@ -47,7 +48,7 @@ interface RoomsResponse {
   results: Room[];
 }
 
-const ITEMS_PER_PAGE = 20; // Changed from 12 to 20
+const ITEMS_PER_PAGE = 20;
 
 // --- Custom useDebounce Hook ---
 function useDebounce<T>(value: T, delay: number): T {
@@ -103,7 +104,6 @@ export default function AllRooms() {
   const [filters, setFilters] = useState({
     maxOccupancy: "",
     search: "",
-    // sortOrder: "", // Removed sortOrder state
   });
 
   const debouncedSearchTerm = useDebounce(filters.search, 500);
@@ -115,7 +115,6 @@ export default function AllRooms() {
     page_size: ITEMS_PER_PAGE,
     ...(searchTerm && { search: searchTerm }),
     ...(filters.maxOccupancy && { max_occupancy: filters.maxOccupancy }),
-    // ...(filters.sortOrder && { sort: filters.sortOrder }), // Removed sort parameter
   });
 
   // --- Generic fetch function for rooms with parsing ---
@@ -123,7 +122,6 @@ export default function AllRooms() {
     availabilityStatus: string,
     page: number,
     searchTerm: string
-    // sortOrder: string // Removed sortOrder parameter
   ): Promise<RoomsResponse> => {
     const params = {
       ...getCommonQueryParams(page, searchTerm),
@@ -146,6 +144,7 @@ export default function AllRooms() {
     isLoading: isLoadingAvailable,
     isError: isErrorAvailable,
     error: errorAvailable,
+    refetch: refetchAvailableRooms, // Get refetch function
   } = useQuery<RoomsResponse, AxiosError>({
     queryKey: [
       "rooms",
@@ -153,15 +152,9 @@ export default function AllRooms() {
       availableCurrentPage,
       filters.maxOccupancy,
       debouncedSearchTerm,
-      // filters.sortOrder, // Removed sortOrder from query key
     ],
     queryFn: () =>
-      fetchRooms(
-        "Available",
-        availableCurrentPage,
-        debouncedSearchTerm
-        // filters.sortOrder // Removed sortOrder from fetchRooms call
-      ),
+      fetchRooms("Available", availableCurrentPage, debouncedSearchTerm),
     keepPreviousData: true,
     enabled: !!hotel_ID,
   });
@@ -172,6 +165,7 @@ export default function AllRooms() {
     isLoading: isLoadingBooked,
     isError: isErrorBooked,
     error: errorBooked,
+    refetch: refetchBookedRooms, // Get refetch function
   } = useQuery<RoomsResponse, AxiosError>({
     queryKey: [
       "rooms",
@@ -179,15 +173,8 @@ export default function AllRooms() {
       bookedCurrentPage,
       filters.maxOccupancy,
       debouncedSearchTerm,
-      // filters.sortOrder, // Removed sortOrder from query key
     ],
-    queryFn: () =>
-      fetchRooms(
-        "Booked",
-        bookedCurrentPage,
-        debouncedSearchTerm
-        // filters.sortOrder // Removed sortOrder from fetchRooms call
-      ),
+    queryFn: () => fetchRooms("Booked", bookedCurrentPage, debouncedSearchTerm),
     keepPreviousData: true,
     enabled: !!hotel_ID,
   });
@@ -198,6 +185,7 @@ export default function AllRooms() {
     isLoading: isLoadingMaintenance,
     isError: isErrorMaintenance,
     error: errorMaintenance,
+    refetch: refetchMaintenanceRooms, // Get refetch function
   } = useQuery<RoomsResponse, AxiosError>({
     queryKey: [
       "rooms",
@@ -205,25 +193,21 @@ export default function AllRooms() {
       maintenanceCurrentPage,
       filters.maxOccupancy,
       debouncedSearchTerm,
-      // filters.sortOrder, // Removed sortOrder from query key
     ],
     queryFn: () =>
-      fetchRooms(
-        "Maintenance",
-        maintenanceCurrentPage,
-        debouncedSearchTerm
-        // filters.sortOrder // Removed sortOrder from fetchRooms call
-      ),
+      fetchRooms("Maintenance", maintenanceCurrentPage, debouncedSearchTerm),
     keepPreviousData: true,
     enabled: !!hotel_ID,
   });
 
   // --- Data Processing (for filter options) ---
-  const allRoomsForFilterOptions = useMemo(() => {
-    return (availableRoomsResponse?.results || [])
-      .concat(bookedRoomsResponse?.results || [])
-      .concat(maintenanceRoomsResponse?.results || []);
-  }, [availableRoomsResponse, bookedRoomsResponse, maintenanceRoomsResponse]);
+  const allRoomsForFilterOptions = useMemo(
+    () =>
+      (availableRoomsResponse?.results || [])
+        .concat(bookedRoomsResponse?.results || [])
+        .concat(maintenanceRoomsResponse?.results || []),
+    [availableRoomsResponse, bookedRoomsResponse, maintenanceRoomsResponse]
+  );
 
   const uniqueMaxOccupancies = useMemo(
     () =>
@@ -232,10 +216,10 @@ export default function AllRooms() {
       ].sort((a, b) => a - b),
     [allRoomsForFilterOptions]
   );
-  const uniqueRoomTypes = useMemo(
-    () => [...new Set(allRoomsForFilterOptions.map((room) => room.room_type))],
-    [allRoomsForFilterOptions]
-  );
+  // const uniqueRoomTypes = useMemo( // This was unused, commenting out
+  //   () => [...new Set(allRoomsForFilterOptions.map((room) => room.room_type))],
+  //   [allRoomsForFilterOptions]
+  // );
 
   // --- Delete Room Mutation ---
   const deleteRoomMutation = useMutation<void, AxiosError, string>({
@@ -260,7 +244,7 @@ export default function AllRooms() {
 
   // --- Event Handlers ---
   const handleFilterChange = (
-    filterType: "maxOccupancy" | "search", // Updated filter types (removed sortOrder)
+    filterType: "maxOccupancy" | "search",
     value: string
   ) => {
     setFilters((prev) => ({ ...prev, [filterType]: value }));
@@ -273,7 +257,6 @@ export default function AllRooms() {
     setFilters({
       maxOccupancy: "",
       search: "",
-      // sortOrder: "", // Removed sort order
     });
     setAvailableCurrentPage(1);
     setBookedCurrentPage(1);
@@ -298,6 +281,13 @@ export default function AllRooms() {
     ) {
       deleteRoomMutation.mutate(roomId);
     }
+  };
+
+  const handleRefetchAllRooms = () => {
+    refetchAvailableRooms();
+    refetchBookedRooms();
+    refetchMaintenanceRooms();
+    toast.info("Refetching all room data...");
   };
 
   // --- Centralized Error and Loading Renderers ---
@@ -408,7 +398,7 @@ export default function AllRooms() {
               {rooms.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-[#6B7280]">
-                    {filters.search || filters.maxOccupancy ? ( // Updated condition (removed sortOrder)
+                    {filters.search || filters.maxOccupancy ? (
                       `No ${emptyMessage
                         .toLowerCase()
                         .replace("no ", "")
@@ -576,7 +566,6 @@ export default function AllRooms() {
         currentRooms = maintenanceRoomsResponse?.results || [];
         break;
     }
-    // No client-side filtering needed here as API handles search, occupancy.
     return currentRooms;
   }, [
     activeTab,
@@ -591,10 +580,10 @@ export default function AllRooms() {
       <div className="w-full px-4 py-4">
         <div className="flex items-center gap-x-4">
           <div className="flex items-center gap-2.5 ">
-            <button>
+            <button onClick={() => navigate(-1)}>
               <IoChevronBackOutline color="#646464" size={18} />
             </button>
-            <button>
+            <button onClick={() => navigate(1)}>
               <IoChevronForwardOutline color="#646464" size={18} />
             </button>
           </div>
@@ -659,14 +648,24 @@ export default function AllRooms() {
           </button>
         </div>
 
-        {/* Add New Room Button */}
-        <button
-          onClick={() => navigate("/rooms/add-room")}
-          className="px-6 py-2 rounded-full flex items-center transition-colors duration-300 flex-shrink-0 mt-4 sm:mt-0 border-[#ced0fd] border-[1px] bg-[#E5E6FF] text-[#5A43D6] text-[0.875rem] font-medium"
-        >
-          <IoAddOutline size={21} className="mr-1" />
-          Add New Room
-        </button>
+        {/* Add New Room Button and Refetch Button */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={() => navigate("/rooms/add-room")}
+            className="px-6 py-2 rounded-full flex items-center transition-colors duration-300 flex-shrink-0 mt-4 sm:mt-0 border-[#ced0fd] border-[1px] bg-[#E5E6FF] text-[#5A43D6] text-[0.875rem] font-medium"
+          >
+            <IoAddOutline size={21} className="mr-1" />
+            Add New Room
+          </button>
+
+          <button
+            onClick={handleRefetchAllRooms}
+            className="px-6 py-2 rounded-full flex items-center transition-colors duration-300 flex-shrink-0 mt-4 sm:mt-0 border-[#A8F6CF] border-[1px] bg-[#D1FAE6] text-[#04966A] text-[0.875rem] font-medium hover:bg-[#C8F5C8]"
+          >
+            <FaSyncAlt size={16} className="mr-1.5" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* --- FILTERS --- */}
@@ -710,20 +709,7 @@ export default function AllRooms() {
           ))}
         </select>
 
-        {/* Removed Price Sort Filter */}
-        {/*
-        <select
-          value={filters.sortOrder}
-          onChange={(e) => handleFilterChange("sortOrder", e.target.value)}
-          className="px-[0.9375rem] py-[0.5rem] text-[0.875rem] font-medium border border-[#E8E8E8] rounded-full focus:outline-none focus:ring-[1.5px] focus:ring-[#553ED0] focus:border-transparent bg-transparent text-[#838383]"
-        >
-          <option value="">Sort by Price</option>
-          <option value="price_asc">Price: Low to High</option>
-          <option value="price_desc">Price: High to Low</option>
-        </select>
-        */}
-
-        {(filters.search || filters.maxOccupancy) && ( // Updated condition (removed sortOrder)
+        {(filters.search || filters.maxOccupancy) && (
           <button
             onClick={clearFilters}
             className="px-[0.9375rem] py-[0.5rem] border-[1px] rounded-full border-[#E8E8E8] text-[#838383] text-[0.875rem] font-medium flex items-center gap-1.5 transition-all hover:bg-gray-50"

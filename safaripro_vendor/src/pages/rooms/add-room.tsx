@@ -2,8 +2,8 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { useMutation, useQuery } from "@tanstack/react-query"; // Import useQuery
-import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
+import { useNavigate } from "react-router-dom";
 import {
   FaCode,
   FaFileAlt,
@@ -14,13 +14,15 @@ import {
   FaInfoCircle,
   FaSpinner,
   FaTags,
+  FaExclamationCircle, // Added for error state
 } from "react-icons/fa";
-import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5"; // Added for header
+import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
 import { useHotel } from "../../providers/hotel-provider";
-import hotelClient from "../../api/hotel-client"; // Use the configured hotelClient
+import hotelClient from "../../api/hotel-client";
+import { toast } from "react-toastify"; // Ensure react-toastify is used
+import "react-toastify/dist/ReactToastify.css"; // Import CSS for toast notifications
 
 // --- TYPE DEFINITIONS ---
-// Define the shape of an Amenity fetched from the API
 interface Amenity {
   id: string;
   name: string;
@@ -32,7 +34,6 @@ interface Amenity {
   updated_at: string;
 }
 
-// Define the shape of a RoomType fetched from the API
 interface RoomTypeOption {
   id: string;
   name: string;
@@ -45,7 +46,7 @@ interface RoomTypeOption {
   size_sqm: number | null;
   base_price: string;
   is_active: boolean;
-  amenities: string[]; // This will be an array of amenity IDs
+  amenities: string[];
 }
 
 // Form validation schema
@@ -58,14 +59,14 @@ const roomSchema = yup.object({
     .string()
     .required("Description is required")
     .min(10, "Description must be at least 10 characters"),
-  room_type: yup.string().required("Room type is required"), // Will be the ID of the room type
+  room_type: yup.string().required("Room type is required"),
   max_occupancy: yup
-    .string() // Keep as string for input, convert to number later if needed
+    .string()
     .required("Max occupancy is required")
     .matches(/^[0-9]+$/, "Must be a number")
     .min(1, "Minimum occupancy is 1"),
   price_per_night: yup
-    .string() // Keep as string for input, convert to number later if needed
+    .string()
     .required("Price per night is required")
     .matches(/^[0-9]+(\.[0-9]{1,2})?$/, "Must be a valid price (e.g., 100.00)")
     .test(
@@ -77,10 +78,10 @@ const roomSchema = yup.object({
     .string()
     .required("Availability status is required")
     .oneOf(
-      ["Available", "Booked", "Maintenance"], // Corrected to "Maintenance" as per API/theme
+      ["Available", "Booked", "Maintenance"],
       "Invalid availability status"
     ),
-  room_amenities: yup.array().of(yup.string()).optional(), // Array of amenity IDs
+  room_amenities: yup.array().of(yup.string()).optional(),
   image: yup
     .string()
     .url("Must be a valid URL")
@@ -90,7 +91,6 @@ const roomSchema = yup.object({
 type RoomFormData = yup.InferType<typeof roomSchema>;
 
 // API function to create room
-// This function will now use hotelClient and construct the payload as specified
 const createRoom = async (
   data: RoomFormData,
   hotelId: string
@@ -99,26 +99,27 @@ const createRoom = async (
     code: data.code,
     description: data.description,
     image: data.image,
-    max_occupancy: data.max_occupancy, // Send as string
-    price_per_night: data.price_per_night, // Send as string
-    room_type: data.room_type, // Send ID directly
-    hotel: hotelId, // Send hotel ID
-    room_amenities: data.room_amenities || [], // Send array of amenity IDs
+    max_occupancy: data.max_occupancy,
+    price_per_night: data.price_per_night,
+    room_type: data.room_type,
+    hotel: hotelId,
+    room_amenities: data.room_amenities || [],
     availability_status: data.availability_status,
-    review_count: "0", // Hardcoded
-    average_rating: "0.0", // Hardcoded
+    review_count: "0",
+    average_rating: "0.0",
   };
 
   const response = await hotelClient.post(
     `v1/rooms/?hotel_id=${hotelId}`,
     payload
-  ); // Use hotelClient.post
+  );
   return response.data;
 };
 
 export default function AddRoom() {
-  const navigate = useNavigate(); // Initialize useNavigate
-  const { hotel, loading: hotelLoading, error: hotelError } = useHotel(); // Destructure loading and error
+  const navigate = useNavigate();
+  const queryClient = useQueryClient(); // Initialize useQueryClient
+  const { hotel, loading: hotelLoading, error: hotelError } = useHotel();
 
   // --- Fetch Room Types ---
   const {
@@ -129,10 +130,10 @@ export default function AddRoom() {
   } = useQuery<RoomTypeOption[]>({
     queryKey: ["allRoomTypes"],
     queryFn: async () => {
-      const response = await hotelClient.get(`v1/room-types/`); // Fetch all room types
+      const response = await hotelClient.get(`v1/room-types/`);
       return response.data.results;
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
   // --- Fetch All Amenities ---
@@ -144,10 +145,10 @@ export default function AddRoom() {
   } = useQuery<Amenity[]>({
     queryKey: ["allAmenities"],
     queryFn: async () => {
-      const response = await hotelClient.get(`v1/amenities/`); // Fetch all amenities
+      const response = await hotelClient.get(`v1/amenities/`);
       return response.data.results;
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
   const {
@@ -176,17 +177,24 @@ export default function AddRoom() {
 
   const createRoomMutation = useMutation({
     mutationFn: (data: RoomFormData) => {
-      const hotelId = hotel?.id; // Use optional chaining for hotel?.id
+      const hotelId = hotel?.id;
       if (!hotelId) {
         throw new Error("Hotel ID is not available. Cannot create room.");
       }
-      return createRoom(data, hotelId); // Pass hotelId to createRoom function
+      return createRoom(data, hotelId);
     },
     onSuccess: (data) => {
       console.log("Room created successfully:", data);
-      toast.success("Room created successfully!"); // Use toast from sonner
+      toast.success("Room created successfully! Redirecting...");
       reset(); // Reset the form fields
-      navigate("/rooms/all-rooms"); // Redirect to all-rooms page
+
+      // Invalidate 'rooms' queries to ensure fresh data on AllRooms page
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+
+      // Navigate to All Rooms page after 3 seconds
+      setTimeout(() => {
+        navigate("/rooms/all-rooms");
+      }, 3000);
     },
     onError: (error: any) => {
       console.error("Error creating room:", error);
@@ -226,7 +234,7 @@ export default function AddRoom() {
   // --- Conditional Error States ---
   if (hotelError || isErrorRoomTypes || isErrorAmenities) {
     const errorMessage =
-      hotelError ||
+      hotelError?.message || // Access message property
       roomTypesError?.message ||
       amenitiesError?.message ||
       "Failed to load required data.";
@@ -276,11 +284,14 @@ export default function AddRoom() {
         <div className="w-full px-4 py-4">
           <div className="flex items-center gap-x-4">
             <div className="flex items-center gap-2.5 ">
-              {/* These buttons don't have navigate logic here, just for consistent styling */}
-              <button>
+              <button onClick={() => navigate(-1)}>
+                {" "}
+                {/* Added navigate back */}
                 <IoChevronBackOutline color="#646464" size={18} />
               </button>
-              <button>
+              <button onClick={() => navigate(1)}>
+                {" "}
+                {/* Added navigate forward */}
                 <IoChevronForwardOutline color="#646464" size={18} />
               </button>
             </div>
@@ -289,7 +300,7 @@ export default function AddRoom() {
             </h1>
           </div>
           <p className="text-[#202020] text-[0.9375rem] font-medium mt-1 flex items-center">
-            <FaInfoCircle className="mr-1.5 opacity-70" size={14} />
+            <FaInfoCircle className="inline mr-1.5 opacity-70" size={14} />
             Fill in the details to add a new room to your hotel. All fields are
             required.
           </p>
@@ -396,8 +407,8 @@ export default function AddRoom() {
                   Max Occupancy *
                 </label>
                 <input
-                  {...register("max_occupancy")} // Keep as string as per payload
-                  type="text" // Keep as text, validation regex handles numeric input
+                  {...register("max_occupancy")}
+                  type="text"
                   id="max_occupancy"
                   placeholder="2"
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0078D3] focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
@@ -422,8 +433,8 @@ export default function AddRoom() {
                   Price per Night ($) *
                 </label>
                 <input
-                  {...register("price_per_night")} // Keep as string as per payload
-                  type="text" // Keep as text, validation regex handles numeric input
+                  {...register("price_per_night")}
+                  type="text"
                   id="price_per_night"
                   placeholder="199.99"
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0078D3] focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
@@ -503,7 +514,7 @@ export default function AddRoom() {
                     className="h-32 w-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600 shadow"
                     onError={(e) => {
                       e.currentTarget.src =
-                        "https://via.placeholder.com/150?text=Image+Load+Error";
+                        "https://placehold.co/150x150/E0E0E0/ADADAD?text=Image+Error"; // Updated placeholder
                     }}
                   />
                 </div>
@@ -530,8 +541,7 @@ export default function AddRoom() {
               >
                 <option value="Available">Available</option>
                 <option value="Booked">Booked</option>
-                <option value="Maintenance">Maintenance</option>{" "}
-                {/* Corrected to "Maintenance" */}
+                <option value="Maintenance">Maintenance</option>
               </select>
               {errors.availability_status && (
                 <p className="text-red-500 text-sm mt-1">
@@ -632,7 +642,7 @@ export default function AddRoom() {
                   watchedValues.room_amenities.length > 0
                     ? watchedValues.room_amenities
                         .map(
-                          (id) => allAmenities?.find((a) => a.id === id)?.name // Use allAmenities here
+                          (id) => allAmenities?.find((a) => a.id === id)?.name
                         )
                         .filter(Boolean)
                         .join(", ")

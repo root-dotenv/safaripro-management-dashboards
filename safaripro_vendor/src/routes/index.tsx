@@ -1,21 +1,6 @@
 // * - - - Main Routing File (3-stages routing i.e Routes > Subroute > Subroute)
 import { Routes, Route } from "react-router-dom";
 import MainOverview from "../pages/overview/overview";
-// import AvailableRooms from "../pages/bookings/available-rooms";
-// import SafariproBookings from "../pages/bookings/safaripro-bookings";
-// import AllBookings from "../pages/bookings/all-bookings";
-// import FinancialPage from "../pages/financial/financial";
-// import ReportsPage from "../pages/reports/reports";
-// import AnalyticsPage from "../pages/analytics/analytics";
-// import RoomTypes from "../pages/rooms/room-types";
-// import NewRoomTypes from "../pages/rooms/new-room-types";
-// import EditRoomType from "../pages/rooms/edit-room-type";
-// import Amenities from "../pages/amenities/amenities";
-// import NewAmenity from "../pages/amenities/new-amenity";
-// import EditAmenity from "../pages/amenities/edit-amenity";
-// import Facilities from "../pages/facilities/facilities";
-// import NewFacility from "../pages/facilities/new-facilities";
-// import EditFacility from "../pages/facilities/edit-facility";
 import Hotel from "../pages/hotel/hotel";
 import HotelServices from "../pages/hotel/hotel-services";
 import HotelAmenities from "../pages/hotel/hotel-amenities";
@@ -26,6 +11,15 @@ import RoomTypes from "../pages/rooms/room-types";
 import AllRooms from "../pages/rooms/all-rooms";
 import EditRoomPage from "../pages/rooms/edit-room";
 import RoomDetailsPage from "../pages/rooms/room-details-page";
+import Guest from "../pages/reservations/guests";
+import CheckedIn from "../pages/reservations/checked-in";
+import CheckedOut from "../pages/reservations/checked-out";
+import SpecialRequests from "../pages/reservations/special-requests";
+import AvailableRooms from "../pages/bookings/available-rooms";
+import SafariproBookings from "../pages/bookings/safaripro-bookings";
+import AllBookings from "../pages/bookings/all-bookings";
+import HotelMeals from "../pages/hotel/hotel-meals";
+import ReportsPage from "../pages/reports/reports";
 
 export default function AppRoutes() {
   return (
@@ -35,12 +29,14 @@ export default function AppRoutes() {
       {/* - - - Analytics & Financial Routes */}
       {/* <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/financial" element={<FinancialPage />} />
-      <Route path="/reports" element={<ReportsPage />} /> */}
+      */}
+      <Route path="/reports" element={<ReportsPage />} />
       {/* - - - Hotels Routes */}
       <Route path="/hotel/my-hotel" element={<Hotel />} />
       <Route path="/hotel/hotel-facilities" element={<HotelFacilities />} />
       <Route path="/hotel/hotel-services" element={<HotelServices />} />
       <Route path="/hotel/hotel-amenities" element={<HotelAmenities />} />
+      <Route path="/hotel/hotel-meals" element={<HotelMeals />} />
       <Route path="/hotel/hotel-events" element={<HotelEvents />} />
       {/* <Route
         path="/hotels/hotel-types/:hotel_type_id"
@@ -55,13 +51,25 @@ export default function AppRoutes() {
       <Route path="/rooms/details/:roomId" element={<RoomDetailsPage />} />
       {/* New route for room details */}
       {/* <Route path="/rooms/edit/:roomId" element={<EditRoomPage />} />   */}
-      {/* - - - Bookings Routes */}
-      {/* <Route path="/bookings/all-bookings" element={<AllBookings />} />
+
+      {/* - - - Reservations Details Routes */}
+      <Route path="/reservations/guests" element={<Guest />} />
+      <Route path="/reservations/checked-in" element={<CheckedIn />} />
+      <Route path="/reservations/checked-out" element={<CheckedOut />} />
+      <Route
+        path="/reservations/special-requests"
+        element={<SpecialRequests />}
+      />
+
+      {/* - - - Bookings  Routes */}
+      <Route path="/bookings/all-bookings" element={<AllBookings />} />
       <Route
         path="/bookings/safaripro-bookings"
         element={<SafariproBookings />}
       />
-      <Route path="/bookings/available-rooms" element={<AvailableRooms />} /> */}
+      <Route path="/bookings/available-rooms" element={<AvailableRooms />} />
+      <Route path="/bookings/special-requests" element={<SpecialRequests />} />
+
       {/* - - - Amenities Routes */}
       {/* <Route path="/amenities/all-amenities" element={<Amenities />} />
       <Route path="/amenities/new-amenity" element={<NewAmenity />} />

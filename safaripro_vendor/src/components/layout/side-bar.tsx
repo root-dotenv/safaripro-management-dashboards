@@ -3,23 +3,33 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { BiHotel } from "react-icons/bi";
 import { BsArrowsCollapseVertical } from "react-icons/bs";
-import { TbBuildingPlus, TbHelp, TbSitemap } from "react-icons/tb";
+import {
+  TbBuildingPlus,
+  TbHelp,
+  TbSitemap,
+  TbMessageExclamation,
+} from "react-icons/tb";
 import { GoChecklist } from "react-icons/go";
 import { PiDotsSixVertical } from "react-icons/pi";
-import { MdDomainAdd } from "react-icons/md";
+import { MdDomainAdd, MdEventNote } from "react-icons/md";
 import {
   LuUserRoundPlus,
   LuChartNoAxesCombined,
   LuNotebookText,
   LuHotel,
   LuLayoutGrid,
+  LuTicket,
 } from "react-icons/lu";
 import { VscTypeHierarchySuper } from "react-icons/vsc";
 import { RiHotelLine } from "react-icons/ri";
 import { HiOutlineDocumentChartBar } from "react-icons/hi2";
 import SidebarLink from "./sidebar-link";
 import SidebarSubMenu from "./sidebar-submenu";
-import { IoAdd } from "react-icons/io5";
+import { MdEventAvailable, MdEventBusy } from "react-icons/md";
+import { FiUsers } from "react-icons/fi";
+import { IoFastFoodOutline } from "react-icons/io5";
+import { PiCalendarStar } from "react-icons/pi";
+
 interface SideBarProps {
   collapsed: boolean;
   toggleCollapse: () => void;
@@ -113,8 +123,15 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
               />
               <SidebarLink
                 to="/hotel/hotel-events"
-                icon={<MdDomainAdd color="#404042" size={19} />}
+                icon={<PiCalendarStar color="#404042" size={19} />}
                 text="Hotel Events"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/hotel/hotel-meals"
+                icon={<IoFastFoodOutline color="#404042" size={19} />}
+                text="Hotel Meals"
                 collapsed={collapsed}
                 isSubLink
               />
@@ -154,7 +171,7 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
             {/* - - - Bookings Route & Subroute */}
             <SidebarSubMenu
               title="Bookings"
-              icon={<LuNotebookText color="#404042" size={19} />}
+              icon={<LuTicket color="#404042" size={19} />}
               collapsed={collapsed}
               isOpen={openSubmenus.bookings}
               onToggle={() => toggleSubmenu("bookings")}
@@ -166,7 +183,7 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
                 collapsed={collapsed}
                 isSubLink
               />
-              {/* Special case for SafariPro Bookings due to custom image icon */}
+              {/* - Special case for SafariPro Bookings due to custom image icon */}
               <li>
                 <NavLink
                   to="/bookings/safaripro-bookings"
@@ -199,32 +216,46 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
               />
             </SidebarSubMenu>
 
-            {/* - - - Amenities Route & Subroute */}
+            {/* - - - Reservations Route & Subroute */}
             <SidebarSubMenu
-              title="Amenities"
-              icon={<IoAdd color="#404042" size={19} />}
+              title="Reservations"
+              icon={<LuNotebookText color="#404042" size={19} />}
               collapsed={collapsed}
-              isOpen={openSubmenus.amenities}
-              onToggle={() => toggleSubmenu("amenities")}
+              isOpen={openSubmenus.reservations}
+              onToggle={() => toggleSubmenu("reservations")}
             >
               <SidebarLink
-                to="/amenities/all-amenities"
-                icon={<VscTypeHierarchySuper color="#404042" size={19} />}
-                text="Hotel Amenities"
+                to="/reservations/guests"
+                icon={<FiUsers color="#404042" size={19} />}
+                text="Guests"
                 collapsed={collapsed}
                 isSubLink
               />
               <SidebarLink
-                to="/amenities/new-amenity"
-                icon={<TbBuildingPlus size={19} color="#404042" />}
-                text="Create New Amenity"
+                to="/reservations/checked-in"
+                icon={<MdEventAvailable size={19} color="#404042" />}
+                text="Checked In"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/reservations/checked-out"
+                icon={<MdEventBusy size={19} color="#404042" />}
+                text="Checked Out"
+                collapsed={collapsed}
+                isSubLink
+              />
+              <SidebarLink
+                to="/reservations/special-requests"
+                icon={<TbMessageExclamation size={19} color="#404042" />}
+                text="Special Requests"
                 collapsed={collapsed}
                 isSubLink
               />
             </SidebarSubMenu>
 
             {/* - - - Facilities Route & Subroute */}
-            <SidebarSubMenu
+            {/* <SidebarSubMenu
               title="Facilities"
               icon={<RiHotelLine color="#404042" size={19} />}
               collapsed={collapsed}
@@ -245,7 +276,7 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
                 collapsed={collapsed}
                 isSubLink
               />
-            </SidebarSubMenu>
+            </SidebarSubMenu> */}
           </ul>
         </nav>
       </div>

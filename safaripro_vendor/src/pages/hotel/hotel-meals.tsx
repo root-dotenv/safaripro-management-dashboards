@@ -1,27 +1,22 @@
-// pages/hotel-services.tsx
+// pages/hotel-meals.tsx
 import { useHotel } from "../../providers/hotel-provider";
 import hotelClient from "../../api/hotel-client";
 import { useQueries } from "@tanstack/react-query";
 import React, { useState, useMemo } from "react";
 import {
   FaSearch,
-  FaBriefcase, // For Business Center
-  FaUtensils, // For Private Dining
-  FaSpa, // For Spa Treatment
-  FaSafari, // Placeholder for Safari Tour (FaSafari not directly available, using something similar or generic)
-  FaPlaneArrival, // For Airport Pickup
+  FaUtensils, // For general meals
+  FaCoffee, // For breakfast
+  FaBed, // For room only
+  FaGlobe, // For all inclusive
   FaQuestionCircle, // Default icon
 } from "react-icons/fa";
 import { LuClock } from "react-icons/lu";
 import { FiHash } from "react-icons/fi";
-import {
-  IoAdd,
-  IoChevronBackOutline,
-  IoChevronForwardOutline,
-} from "react-icons/io5";
+import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
 
-// --- NEW INTERFACE FOR SERVICE ---
-interface IService {
+// --- NEW INTERFACE FOR MEAL TYPE ---
+interface IMealType {
   id: string;
   created_by: string | null;
   updated_by: string | null;
@@ -31,68 +26,67 @@ interface IService {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  code: string;
   name: string;
+  score: number;
   description: string;
-  amendment: string; // Specific to Services
-  icon: string | null;
-  service_type: string; // ID of service type
-  service_scope: string; // ID of service scope
   translation: string | null;
 }
 
-// --- NEW INTERFACE FOR SERVICES RESPONSE ---
-interface IServicesResponse {
+// --- NEW INTERFACE FOR MEAL TYPES RESPONSE ---
+interface IMealTypesResponse {
   count: number;
   next: string | null;
   previous: string | null;
-  results: IService[];
+  results: IMealType[];
 }
 
-// --- NEW INTERFACE FOR SERVICE TABLE PROPS ---
-interface ServiceTableProps {
-  services: IService[];
+// --- NEW INTERFACE FOR MEAL TYPE TABLE PROPS ---
+interface MealTypeTableProps {
+  mealTypes: IMealType[];
   title: string;
   searchTerm: string;
   isHotelSpecificTable?: boolean;
 }
 
-// Helper function to get icon based on service name (or code if available)
-const getServiceIcon = (serviceName: string) => {
-  const lowerName = serviceName.toLowerCase();
+// Helper function to get icon based on meal type name or code
+const getMealTypeIcon = (mealTypeName: string, mealTypeCode: string) => {
+  const lowerName = mealTypeName.toLowerCase();
+  const upperCode = mealTypeCode.toUpperCase();
 
-  switch (lowerName) {
-    case "business center":
-      return <FaBriefcase className="text-[#475569]" />;
-    case "private dining":
-      return <FaUtensils className="text-[#F59E0B]" />;
-    case "spa treatment":
-      return <FaSpa className="text-[#F59E0B]" />;
-    case "safari tour":
-      return <FaSafari className="text-[#10B981]" />; // Assuming a FaSafari icon, if not, use FaTree or similar
-    case "airport pickup":
-      return <FaPlaneArrival className="text-[#475569]" />;
+  switch (upperCode) {
+    case "BB": // Bed & Breakfast
+      return <FaCoffee className="text-[#F59E0B]" />;
+    case "HB": // Half Board
+      return <FaUtensils className="text-[#10B981]" />;
+    case "FB": // Full Board
+      return <FaUtensils className="text-[#EF4444]" />;
+    case "AI": // All Inclusive
+      return <FaGlobe className="text-[#3B82F6]" />;
+    case "RO": // Room Only
+      return <FaBed className="text-[#475569]" />;
     default:
       return <FaQuestionCircle className="text-[#6B7280]" />;
   }
 };
 
-const ServiceTable: React.FC<ServiceTableProps> = ({
-  services,
+const MealTypeTable: React.FC<MealTypeTableProps> = ({
+  mealTypes,
   title,
   searchTerm,
   isHotelSpecificTable = false,
 }) => {
-  const filteredServices = useMemo(() => {
-    if (!searchTerm) return services;
+  const filteredMealTypes = useMemo(() => {
+    if (!searchTerm) return mealTypes;
 
     const lowercaseSearch = searchTerm.toLowerCase();
-    return services.filter(
-      (service) =>
-        service.name.toLowerCase().includes(lowercaseSearch) ||
-        service.description.toLowerCase().includes(lowercaseSearch) ||
-        service.amendment.toLowerCase().includes(lowercaseSearch) // Search in amendment too
+    return mealTypes.filter(
+      (mealType) =>
+        mealType.name.toLowerCase().includes(lowercaseSearch) ||
+        mealType.code.toLowerCase().includes(lowercaseSearch) ||
+        mealType.description.toLowerCase().includes(lowercaseSearch)
     );
-  }, [services, searchTerm]);
+  }, [mealTypes, searchTerm]);
 
   return (
     <div className="mb-8 pb-10">
@@ -103,12 +97,9 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
             <LuClock size={13} /> active
           </span>
           <span className="flex items-center gap-1.5 border-[1px] rounded-full border-[#E8E8E8] text-[#838383] text-[0.875rem] font-medium px-[0.9375rem] py-1 transition-all">
-            <FiHash /> Service
+            <FiHash /> Meal Type
           </span>
-          <span className="flex items-center gap-1.5 border-[1px] rounded-full border-[#E8E8E8] text-[#838383] text-[0.875rem] font-medium px-[0.9375rem] py-1 transition-all">
-            <IoAdd />
-            extra
-          </span>
+          {/* You can add more specific tags here if needed, similar to amenities/facilities */}
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -119,79 +110,83 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                 ICON
               </th>
               <th className="text-left text-[0.875rem] py-3 px-4 font-medium text-[#838383]">
+                CODE
+              </th>
+              <th className="text-left text-[0.875rem] py-3 px-4 font-medium text-[#838383]">
                 NAME
               </th>
               <th className="text-left text-[0.875rem] py-3 px-4 font-medium text-[#838383]">
                 DESCRIPTION
               </th>
               <th className="text-left text-[0.875rem] py-3 px-4 font-medium text-[#838383]">
-                AMENDMENT
+                SCORE
               </th>
               <th className="text-left text-[0.875rem] py-3 px-4 font-medium text-[#838383]">
                 ACTIVE
               </th>
-              {/* Removed FEE APPLIES and RESERVATION REQUIRED as per service response */}
             </tr>
           </thead>
           <tbody>
-            {filteredServices.length === 0 ? (
+            {filteredMealTypes.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-[#6B7280]">
+                <td colSpan={6} className="text-center py-8 text-[#6B7280]">
                   {isHotelSpecificTable ? (
                     <div className="flex flex-col items-center justify-center">
                       <FaQuestionCircle className="text-4xl text-[#6B7280] mb-2" />
-                      <p>No services currently available for this hotel.</p>
+                      <p>No meal types currently available for this hotel.</p>
                       {searchTerm && (
                         <p className="text-sm">
-                          No services found matching your search.
+                          No meal types found matching your search.
                         </p>
                       )}
                     </div>
                   ) : searchTerm ? (
-                    "No services found matching your search."
+                    "No meal types found matching your search."
                   ) : (
-                    "No services available in the system."
+                    "No meal types available in the system."
                   )}
                 </td>
               </tr>
             ) : (
-              filteredServices.map((service) => (
+              filteredMealTypes.map((mealType) => (
                 <tr
-                  key={service.id}
+                  key={mealType.id}
                   className="border-b border-[#E8E8E8] hover:bg-[#FFF]"
                 >
-                  {/* - - - service icon */}
+                  {/* - - - meal type icon */}
                   <td className="py-4 px-4">
                     <div className="w-6 h-6 flex items-center justify-center">
-                      {getServiceIcon(service.name)}
+                      {getMealTypeIcon(mealType.name, mealType.code)}
                     </div>
                   </td>
-                  {/* - - - service name */}
+                  {/* - - - meal type code */}
                   <td className="py-4 px-4 font-medium text-[#202020]">
-                    {service.name}
+                    {mealType.code}
                   </td>
+                  {/* - - - meal type name */}
+                  <td className="py-4 px-4 text-[#202020]">{mealType.name}</td>
                   {/* - - - description */}
                   <td className="py-4 px-4 text-[#202020] max-w-xs">
-                    <div className="truncate" title={service.description}>
-                      {service.description}
+                    <div className="truncate" title={mealType.description}>
+                      {mealType.description}
                     </div>
                   </td>
-                  {/* - - - amendment */}
-                  <td className="py-4 px-4 text-[#202020] max-w-xs">
-                    <div className="truncate" title={service.amendment}>
-                      {service.amendment || "N/A"}
-                    </div>
+                  {/* - - - score */}
+                  <td className="py-4 px-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#D1FAE5] text-[#059669]">
+                      {mealType.score}
+                    </span>
                   </td>
                   {/* - - - is_active */}
                   <td className="py-4 px-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        service.is_active
+                        mealType.is_active
                           ? "bg-[#D1FAE5] text-[#059669]"
                           : "bg-[#FEE2E2] text-[#DC2626]"
                       }`}
                     >
-                      {service.is_active ? "Yes" : "No"}
+                      {mealType.is_active ? "Yes" : "No"}
                     </span>
                   </td>
                 </tr>
@@ -204,69 +199,69 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
   );
 };
 
-export default function HotelServices() {
+export default function HotelMeals() {
   const { hotel, loading: hotelLoading, error: hotelError } = useHotel();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const hotelServiceIds = hotel?.services || []; // Use hotel.services for service IDs
+  const hotelMealTypeIds = hotel?.meal_types || []; // Use hotel.meal_types for meal type IDs
 
   const queries = [
     {
-      queryKey: ["allServices"], // Changed queryKey
+      queryKey: ["allMealTypes"], // Changed queryKey
       queryFn: async () => {
-        const response = await hotelClient.get<IServicesResponse>(
-          "https://hotel.tradesync.software/api/v1/services/" // Changed endpoint
+        const response = await hotelClient.get<IMealTypesResponse>(
+          "https://hotel.tradesync.software/api/v1/meal-types/" // Changed endpoint
         );
         return response.data.results;
       },
       staleTime: 1000 * 60 * 5,
       enabled: !hotelLoading,
     },
-    ...hotelServiceIds.map((serviceId) => ({
-      queryKey: ["hotelService", serviceId], // Changed queryKey
+    ...hotelMealTypeIds.map((mealTypeId) => ({
+      queryKey: ["hotelMealType", mealTypeId], // Changed queryKey
       queryFn: async () => {
-        const response = await hotelClient.get<IService>(
-          `v1/services/${serviceId}/` // Changed endpoint
+        const response = await hotelClient.get<IMealType>(
+          `v1/meal-types/${mealTypeId}/` // Changed endpoint
         );
         return response.data;
       },
       staleTime: 1000 * 60 * 5,
-      enabled: !!hotel?.services,
+      enabled: !!hotel?.meal_types,
     })),
   ];
 
   const results = useQueries({ queries });
 
-  const allServicesQueryResult = results[0]; // Changed variable name
-  const hotelSpecificServicesQueryResults = results.slice(1); // Changed variable name
+  const allMealTypesQueryResult = results[0]; // Changed variable name
+  const hotelSpecificMealTypesQueryResults = results.slice(1); // Changed variable name
 
-  const allServicesLoading = allServicesQueryResult.isLoading; // Changed variable name
-  const allServicesError = allServicesQueryResult.isError
-    ? allServicesQueryResult.error?.message || "Failed to load all services." // Changed message
+  const allMealTypesLoading = allMealTypesQueryResult.isLoading; // Changed variable name
+  const allMealTypesError = allMealTypesQueryResult.isError
+    ? allMealTypesQueryResult.error?.message || "Failed to load all meal types." // Changed message
     : null;
-  const allServices = allServicesQueryResult.data || []; // Changed variable name
+  const allMealTypes = allMealTypesQueryResult.data || []; // Changed variable name
 
-  const hotelSpecificServicesLoading = hotelSpecificServicesQueryResults.some(
+  const hotelSpecificMealTypesLoading = hotelSpecificMealTypesQueryResults.some(
     (query) => query.isLoading
   );
-  const hotelSpecificServicesError = hotelSpecificServicesQueryResults.some(
+  const hotelSpecificMealTypesError = hotelSpecificMealTypesQueryResults.some(
     (query) => query.isError
   )
-    ? "Failed to load some hotel-specific services." // Changed message
+    ? "Failed to load some hotel-specific meal types." // Changed message
     : null;
-  const hotelSpecificServices = hotelSpecificServicesQueryResults
+  const hotelSpecificMealTypes = hotelSpecificMealTypesQueryResults
     .map((query) => query.data)
-    .filter((data): data is IService => data !== undefined); // Changed type cast
+    .filter((data): data is IMealType => data !== undefined); // Changed type cast
 
   const isLoading =
-    hotelLoading || allServicesLoading || hotelSpecificServicesLoading; // Changed variable names
-  const error = hotelError || allServicesError || hotelSpecificServicesError; // Changed variable names
+    hotelLoading || allMealTypesLoading || hotelSpecificMealTypesLoading; // Changed variable names
+  const error = hotelError || allMealTypesError || hotelSpecificMealTypesError; // Changed variable names
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#F8FAFC]">
         <div className="text-lg font-semibold text-[#334155]">
-          Loading services...
+          Loading meal types...
         </div>
       </div>
     );
@@ -282,7 +277,7 @@ export default function HotelServices() {
 
   return (
     <div className="w-full h-full min-h-screen">
-      {/* Section Header (Maintained similar structure to HotelFacilities) */}
+      {/* Section Header (Maintained similar structure) */}
       <div className="w-full px-4 py-4">
         <div className="flex items-center gap-x-4">
           <div className="flex items-center gap-2.5">
@@ -294,13 +289,13 @@ export default function HotelServices() {
             </button>
           </div>
           <h1 className="text-[1.375rem] text-[#202020] font-bold text-center">
-            Hotel Services Overview
+            Hotel Meal Types Overview
           </h1>
         </div>
         <p className="text-[#202020] text-[0.9375rem] font-medium">
-          Services are offerings that enhance the guest experience, often
-          requiring a specific request or schedule. Explore what's available at
-          your hotel and across the SafariPro Management System.
+          Meal types define the dining options available to guests during their
+          stay, such as breakfast-only or all-inclusive. Explore what's offered
+          at your hotel and across the SafariPro Management System.
         </p>
       </div>
       <div className="mb-6">
@@ -310,7 +305,7 @@ export default function HotelServices() {
           </div>
           <input
             type="text"
-            placeholder="Search services..."
+            placeholder="Search meal types..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full py-[7px] pl-10 px-[1rem] text-base font-medium border border-[#E8E8E8] rounded-md focus:outline-none focus:ring-[1.5px] focus:ring-[#553ED0] focus:border-transparent bg-transparent"
@@ -318,16 +313,16 @@ export default function HotelServices() {
         </div>
       </div>
 
-      <ServiceTable // Changed component name
-        services={hotelSpecificServices} // Changed prop name
-        title={`${hotel?.name}'s Hotel Services`} // Changed title
+      <MealTypeTable // Changed component name
+        mealTypes={hotelSpecificMealTypes} // Changed prop name
+        title={`${hotel?.name}'s Hotel Meal Types`} // Changed title
         searchTerm={searchTerm}
         isHotelSpecificTable={true}
       />
 
-      <ServiceTable // Changed component name
-        services={allServices} // Changed prop name
-        title="SafariPro Hotel Services" // Changed title
+      <MealTypeTable // Changed component name
+        mealTypes={allMealTypes} // Changed prop name
+        title="SafariPro Hotel Meal Types" // Changed title
         searchTerm={searchTerm}
       />
     </div>
