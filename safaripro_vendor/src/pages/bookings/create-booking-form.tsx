@@ -1,166 +1,143 @@
 // safaripro_vendor/src/pages/bookings/create-booking-form.tsx
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom"; // Import useParams
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"; // Import useQuery
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  FaSpinner,
-  FaArrowLeft,
-  FaBed,
-  FaDollarSign,
-  FaUsers,
-  FaStar,
-  FaInfoCircle,
-  FaWifi,
-  FaLock,
-  FaDoorOpen,
-  FaShower,
-  FaDesktop,
-} from "react-icons/fa";
-import { useHotel } from "../../providers/hotel-provider";
-import CustomLoader from "../../components/ui/custom-loader";
+import { FaSpinner, FaArrowLeft, FaBed, FaUsers, FaStar } from "react-icons/fa"; // Added FaBed, FaUsers, FaStar
 
 // --- TYPE DEFINITIONS ---
-interface RoomDetail {
+// Define the shape of the data that will be sent in the POST request payload.
+interface NewBookingFormData {
+  full_name: string;
+  phone_number: string;
+  property_item_type: string; // Now pre-filled from room details
+  property_item: string; // Hardcoded
+  property_id: string; // Now pre-filled from room ID
+  start_date: string;
+  end_date: string;
+  checkin: null;
+  checkout: null;
+  address: string;
+  email: string;
+  booking_type: string; // Hardcoded to "Physical"
+  amount_required: string; // Now pre-filled from room details
+  microservice_item_id: string; // Hardcoded
+  special_requests: string;
+  booking_status: string;
+  number_of_booked_property: number;
+  number_of_guests: number;
+  number_of_children: number;
+  number_of_infants: number;
+  amount_paid: string;
+}
+
+// Interface for fetched Room Details
+interface RoomDetails {
   id: string;
   hotel_name: string;
   hotel_id: string;
   room_type_name: string;
   room_type_id: string;
-  amenities: {
-    id: string;
-    name: string;
-    code: string;
-    description: string;
-    icon: string;
-  }[];
   code: string;
   description: string;
   image: string;
   max_occupancy: number;
   price_per_night: number;
   availability_status: string;
-  average_rating: string; // Comes as string, convert to number for display
+  average_rating: string; // Keep as string as per sample, will parse for display
   review_count: number;
 }
 
-interface NewBookingFormData {
-  full_name: string;
-  phone_number: string;
-  amount_required: number; // Ensure this is a number as per payload example
-  property_item_type: string;
-  property_item: string; // Hardcoded (or should come from roomDetails.id if it's the actual property item being booked)
-  property_id: string; // Comes from useParams (roomDetails.hotel_id)
-  microservice_item_id: string; // Hardcoded, derived from hotel.id
-  start_date: string;
-  end_date: string;
-  checkin: string;
-  checkout: string;
-  address?: string;
-  email: string;
-  booking_type: "Physical" | "Online"; // Hardcoded to "Physical"
-  booking_status:
-    | "Processing"
-    | "Confirmed"
-    | "Paid"
-    | "Checked In"
-    | "Checked Out"
-    | "Cancelled"
-    | "No Show"
-    | "Refunded"
-    | "In Progress"
-    | "Reserved"
-    | "On Hold"; // Hardcoded to "Confirmed"
-  special_requests?: string | null; // Can be null
-  service_notes?: string | null; // Can be null
-  voucher_code?: string | null; // Can be null
-  number_of_booked_property?: number; // Should be number
-}
-
-// - - - HELPER FUNCTION FOR ICON MAPPING ---
-const getAmenityIcon = (iconName: string) => {
-  switch (iconName?.toLowerCase()) {
-    case "wifi":
-      return <FaWifi />;
-    case "lock":
-      return <FaLock />;
-    case "door-open":
-      return <FaDoorOpen />;
-    case "shower":
-      return <FaShower />;
-    case "desktop":
-      return <FaDesktop />;
-    case "bed":
-      return <FaBed />;
-    case "bath":
-      return <FaShower />; // Reusing shower for bath
-    default:
-      return <FaInfoCircle />;
-  }
-};
+// Reusable No Data / Error Message Component (for consistency, though less likely to be used here)
+const NoDataMessage: React.FC<{
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  type?: "info" | "error";
+  children?: React.ReactNode;
+}> = ({ icon: Icon, title, description, type = "info", children }) => (
+  <div
+    className={`p-8 rounded-xl text-center border ${
+      type === "error"
+        ? "bg-red-50/80 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800"
+        : "bg-blue-50/80 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-800"
+    }`}
+  >
+    <Icon className="mx-auto h-16 w-16 mb-4 opacity-80" />
+    <h3 className="text-2xl font-bold mb-3">{title}</h3>
+    <p className="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
+      {description}
+    </p>
+    {children}
+  </div>
+);
 
 export default function CreateBookingForm() {
-  const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { hotel } = useHotel();
-  console.log(`- - - - Hotel Object in Booking Form`);
-  console.log(hotel);
-
-  // Initialize formData with hardcoded and default values
-  const [formData, setFormData] = useState<Partial<NewBookingFormData>>({
-    booking_type: "Physical", // Hardcoded as per request
-    booking_status: "Confirmed", // Hardcoded as per request
-    number_of_booked_property: 1, // Default value
-    // microservice_item_id will be set from hotel.id below
-    // property_id will be set from roomDetails.hotel_id below
-    // property_item will be set from roomDetails.id below
-    // 'property_item_type' and 'amount_required' will be set in useEffect from roomDetails
-  });
-  const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
+  const { roomId } = useParams<{ roomId: string }>(); // Get room ID from URL
 
   // --- FETCH ROOM DETAILS ---
-  // This fetch is crucial for getting 'price_per_night' and 'room_type_name'
   const {
     data: roomDetails,
     isLoading: isLoadingRoomDetails,
     isError: isErrorRoomDetails,
     error: roomDetailsError,
-  } = useQuery<RoomDetail, Error>({
+  } = useQuery<RoomDetails>({
     queryKey: ["roomDetails", roomId],
     queryFn: async () => {
       if (!roomId) {
-        throw new Error("Room ID is missing for fetching details.");
+        throw new Error("Room ID is missing.");
       }
       const response = await axios.get(
         `https://hotel.tradesync.software/api/v1/rooms/${roomId}/`
       );
-      // Ensure price and rating are parsed correctly from string to number
-      return {
-        ...response.data,
-        price_per_night: parseFloat(response.data.price_per_night),
-        average_rating: parseFloat(response.data.average_rating),
-      };
+      return response.data;
     },
-    enabled: !!roomId, // Only run this query if roomId is available
-    staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
+    enabled: !!roomId, // Only fetch if roomId is available
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Effect to update formData with room details once fetched
+  // Initialize formData with all fields.
+  // Default hardcoded values and values that will be pre-filled from roomDetails.
+  const [formData, setFormData] = useState<NewBookingFormData>({
+    full_name: "",
+    phone_number: "",
+    property_item_type: "", // Will be set from roomDetails.room_type_name
+    property_item: "2cab4f9b-60e4-4d00-bc3c-1a4d45689dea", // Hardcoded
+    property_id: "", // Will be set from roomDetails.id
+    start_date: "",
+    end_date: "",
+    checkin: null,
+    checkout: null,
+    address: "",
+    email: "",
+    booking_type: "Physical", // Hardcoded
+    amount_required: "", // Will be set from roomDetails.price_per_night
+    microservice_item_id: "96e3bfc0-48bd-40f7-a6a8-3c86f11899b6", // Hardcoded
+    special_requests: "",
+    booking_status: "",
+    number_of_booked_property: 1,
+    number_of_guests: 1,
+    number_of_children: 0,
+    number_of_infants: 0,
+    amount_paid: "",
+  });
+  const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
+
+  // Effect to update formData when roomDetails are fetched
   useEffect(() => {
-    if (roomDetails && hotel?.id) {
+    if (roomDetails) {
       setFormData((prev) => ({
         ...prev,
-        amount_required: roomDetails.price_per_night, // Hardcoded price from room details
+        property_id: roomDetails.id,
         property_item_type: roomDetails.room_type_name,
-        property_id: roomDetails.hotel_id, // Get property_id from roomDetails
-        microservice_item_id: hotel.id, // Get microservice_item_id from hotel context
-        property_item: roomDetails.id, // Set property_item to the room's ID
+        amount_required: roomDetails.price_per_night.toFixed(2), // Format to 2 decimal places as string
       }));
     }
-  }, [roomDetails, hotel]); // Re-run when roomDetails or hotel changes
+  }, [roomDetails]);
 
   // --- CREATE BOOKING MUTATION ---
   const createBookingMutation = useMutation<any, Error, NewBookingFormData>({
@@ -172,7 +149,7 @@ export default function CreateBookingForm() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["hotelBookings", hotel.id] });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       toast.success("Booking created successfully!");
       navigate("/bookings/all-bookings");
     },
@@ -188,25 +165,21 @@ export default function CreateBookingForm() {
 
   // --- HANDLERS ---
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+    const { name, value, type } = e.target;
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value, // Store as YYYY-MM-DD
+      [name]: type === "number" && value !== "" ? parseFloat(value) : value,
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!submissionConfirmed) {
       toast.info(
         "Please confirm your booking details below by checking the box."
@@ -214,25 +187,28 @@ export default function CreateBookingForm() {
       return;
     }
 
-    // Basic validation to ensure required fields (already marked with *) are present
+    // List of required fields for basic validation
+    // property_id, property_item_type, amount_required are now pre-filled
     const requiredFields: Array<keyof NewBookingFormData> = [
       "full_name",
       "phone_number",
+      "start_date",
+      "end_date",
+      "address",
       "email",
-      "checkin",
-      "checkout",
-      "amount_required",
-      "property_item_type",
-      "property_item",
-      "property_id",
-      "microservice_item_id",
-      "booking_type",
       "booking_status",
       "number_of_booked_property",
+      "number_of_guests",
+      "amount_paid",
     ];
 
     const missingFields = requiredFields.filter(
-      (field) => !formData[field] && formData[field] !== 0
+      (field) =>
+        (typeof formData[field] === "string" &&
+          formData[field].trim() === "") ||
+        (typeof formData[field] === "number" &&
+          isNaN(formData[field] as number)) ||
+        formData[field] === null
     );
 
     if (missingFields.length > 0) {
@@ -240,32 +216,42 @@ export default function CreateBookingForm() {
       return;
     }
 
-    // Construct the payload with both user inputs and hardcoded values
-    // Ensure numbers are numbers and strings are strings
+    // Ensure pre-filled fields are not empty before sending
+    if (
+      !formData.property_id ||
+      !formData.property_item_type ||
+      !formData.amount_required
+    ) {
+      toast.error("Room details are still loading or missing. Please wait.");
+      return;
+    }
+
     const bookingDataToSend: NewBookingFormData = {
-      full_name: formData.full_name!,
-      phone_number: Number(formData.phone_number!),
-      amount_required: parseFloat(formData.amount_required!.toString()), // Convert to float
-      property_item_type: formData.property_item_type!,
-      property_item: formData.property_item!,
-      property_id: formData.property_id!,
-      microservice_item_id: formData.microservice_item_id!,
-      start_date: formData.checkin!, // Using checkin date as start_date
-      end_date: formData.checkout!, // Using checkout date as end_date
-      checkin: formData.checkin!,
-      checkout: formData.checkout!,
-      address: formData.address || null, // Send null if not provided
-      email: formData.email!,
-      booking_type: formData.booking_type!,
-      booking_status: formData.booking_status!,
-      number_of_booked_property: formData.number_of_booked_property || 1, // Default to 1 if not set
-      special_requests: formData.special_requests || null,
-      service_notes: formData.service_notes || null,
-      voucher_code: formData.voucher_code || null,
-      // Rating is not part of this form, so omit it from payload
+      full_name: formData.full_name,
+      phone_number: formData.phone_number,
+      property_item_type: formData.property_item_type, // Pre-filled
+      property_item: formData.property_item, // Hardcoded
+      property_id: formData.property_id, // Pre-filled
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      checkin: null,
+      checkout: null,
+      address: formData.address,
+      email: formData.email,
+      booking_type: formData.booking_type, // Hardcoded
+      amount_required: formData.amount_required, // Pre-filled
+      microservice_item_id: formData.microservice_item_id, // Hardcoded
+      special_requests: formData.special_requests,
+      booking_status: formData.booking_status,
+      number_of_booked_property: formData.number_of_booked_property,
+      number_of_guests: formData.number_of_guests,
+      number_of_children: formData.number_of_children,
+      number_of_infants: formData.number_of_infants,
+      amount_paid: formData.amount_paid,
     };
 
-    console.log("Final payload being sent:", bookingDataToSend); // Console log before mutation
+    console.log("Final payload being sent:", bookingDataToSend);
+
     createBookingMutation.mutate(bookingDataToSend);
   };
 
@@ -273,108 +259,92 @@ export default function CreateBookingForm() {
     setSubmissionConfirmed(!submissionConfirmed);
   };
 
-  // --- RENDER LOGIC ---
-  if (hotel.loading) {
-    // Using hotel.loading from useHotel hook
+  // --- RENDER LOGIC FOR ROOM DETAILS ---
+  if (isLoadingRoomDetails) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F8FAFC]">
-        <div className="text-center p-8 bg-white rounded-lg shadow border border-gray-200">
-          <FaSpinner className="animate-spin rounded-full h-12 w-12 border-4 border-[#553ED0] border-t-transparent mx-auto mb-4 text-[#553ED0]" />
-          <p className="text-[#334155] font-semibold text-lg">
-            Loading Hotel Information...
-          </p>
-          <p className="text-[#6B7280] text-sm mt-1">
-            Getting hotel details to create booking.
-          </p>
-        </div>
+      <div className="p-4 sm:p-6 lg:p-8 bg-[#F8FAFC] min-h-screen text-[#202020] font-sans flex items-center justify-center">
+        <FaSpinner className="animate-spin text-[#553ED0] text-4xl" />
+        <p className="ml-4 text-lg">Loading room details...</p>
       </div>
     );
   }
 
-  if (hotel.error) {
-    // Using hotel.error from useHotel hook
+  if (isErrorRoomDetails || !roomDetails) {
     return (
-      <NoDataMessage
-        icon={FaInfoCircle}
-        title="Error Loading Hotel!"
-        description={hotel.error || "Could not retrieve hotel information."}
-        type="error"
-      />
-    );
-  }
-
-  if (!hotel.id) {
-    return (
-      <NoDataMessage
-        icon={FaInfoCircle}
-        title="No Hotel Selected or Found"
-        description="Cannot create booking without hotel context. Please ensure a hotel is selected or configured in the system."
-        type="info"
-      />
-    );
-  }
-
-  if (isLoadingRoomDetails) {
-    return <CustomLoader message="Loading Room Details..." />;
-  }
-
-  if (isErrorRoomDetails) {
-    return (
-      <NoDataMessage
-        icon={FaInfoCircle}
-        title="Error Loading Room Details!"
-        description={
-          roomDetailsError?.message || "An unexpected error occurred."
-        }
-        type="error"
-      />
-    );
-  }
-
-  if (!roomDetails) {
-    return (
-      <NoDataMessage
-        icon={FaInfoCircle}
-        title="Room Not Found"
-        description={`The room with ID "${roomId}" could not be found or is not available. Try going back and selecting another room.`}
-        type="info"
-      >
-        <button
-          onClick={() => navigate("/bookings/available-rooms")}
-          className="mt-6 px-6 py-2 bg-[#553ED0] text-white font-medium rounded-lg hover:bg-[#432DBA] transition-colors shadow"
+      <div className="p-4 sm:p-6 lg:p-8 bg-[#F8FAFC] min-h-screen text-[#202020] font-sans flex items-center justify-center">
+        <NoDataMessage
+          icon={FaBed}
+          title="Room Details Not Found"
+          description={
+            roomDetailsError?.message ||
+            "Could not load details for the selected room. Please try again."
+          }
+          type="error"
         >
-          Go Back to Available Rooms
-        </button>
-      </NoDataMessage>
+          <button
+            onClick={() => navigate("/bookings/available-rooms")}
+            className="mt-4 px-4 py-2 border border-[#E8E8E8] text-[#6B7280] rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
+          >
+            Go back to Available Rooms
+          </button>
+        </NoDataMessage>
+      </div>
     );
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F8FAFC] min-h-screen text-[#202020] font-sans">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Booking Form Section */}
-        <div className="bg-white p-8 rounded-xl shadow-lg border border-[#E7EBF5] h-fit">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-[#202020]">
-              New Booking for Room {roomDetails.code}
-            </h1>
-            <button
-              onClick={() => navigate("/bookings/available-rooms")} // Corrected navigation to available-rooms
-              className="flex items-center gap-2 px-4 py-2 border border-[#E8E8E8] text-[#6B7280] rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
-            >
-              <FaArrowLeft /> Back to Rooms
-            </button>
-          </div>
+      <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-[#E7EBF5]">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#202020]">
+            Create New Booking
+          </h1>
+          <button
+            onClick={() => navigate("/bookings/all-bookings")}
+            className="flex items-center gap-2 px-4 py-2 border border-[#E8E8E8] text-[#6B7280] rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
+          >
+            <FaArrowLeft /> Back to All Bookings
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Form Header */}
-            <div>
-              <h2 className="text-xl font-semibold text-[#334155] mb-4">
-                Guest Information
-              </h2>
+        {/* Display Fetched Room Details */}
+        <div className="mb-6 p-4 border border-[#D9DAFF] rounded-lg bg-[#E5E6FF] flex flex-col md:flex-row items-center gap-4">
+          <img
+            src={roomDetails.image || "https://placehold.co/100x100?text=Room"}
+            alt={roomDetails.code}
+            className="w-24 h-24 object-cover rounded-md border border-[#553ED0]"
+          />
+          <div className="flex-1 text-[#202020]">
+            <h3 className="text-xl font-bold mb-1">
+              {roomDetails.room_type_name} - Room {roomDetails.code}
+            </h3>
+            <p className="text-sm text-[#334155] mb-2">
+              {roomDetails.description}
+            </p>
+            <div className="flex items-center gap-4 text-sm font-medium">
+              <span className="flex items-center gap-1">
+                <FaUsers className="text-[#553ED0]" /> Max Occupancy:{" "}
+                {roomDetails.max_occupancy}
+              </span>
+              <span className="flex items-center gap-1">
+                <FaBed className="text-[#553ED0]" /> Price/Night: $
+                {roomDetails.price_per_night.toFixed(2)}
+              </span>
+              <span className="flex items-center gap-1">
+                <FaStar className="text-amber-400" /> Rating:{" "}
+                {parseFloat(roomDetails.average_rating).toFixed(1)} (
+                {roomDetails.review_count} reviews)
+              </span>
             </div>
+          </div>
+        </div>
 
-            {/* Main Form Inputs */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Guest Information */}
+          <div className="border-b border-[#E8E8E8] pb-4">
+            <h2 className="text-xl font-semibold text-[#334155] mb-4">
+              Guest Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
@@ -387,7 +357,7 @@ export default function CreateBookingForm() {
                   type="text"
                   id="full_name"
                   name="full_name"
-                  value={formData.full_name || ""}
+                  value={formData.full_name}
                   onChange={handleChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
@@ -404,7 +374,7 @@ export default function CreateBookingForm() {
                   type="email"
                   id="email"
                   name="email"
-                  value={formData.email || ""}
+                  value={formData.email}
                   onChange={handleChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
@@ -421,7 +391,7 @@ export default function CreateBookingForm() {
                   type="tel"
                   id="phone_number"
                   name="phone_number"
-                  value={formData.phone_number || ""}
+                  value={formData.phone_number}
                   onChange={handleChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
@@ -432,207 +402,296 @@ export default function CreateBookingForm() {
                   htmlFor="address"
                   className="block text-sm font-medium text-[#6B7280] mb-1"
                 >
-                  Address
+                  Address <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   id="address"
                   name="address"
-                  value={formData.address || ""}
+                  value={formData.address}
                   onChange={handleChange}
                   className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="checkin"
-                  className="block text-sm font-medium text-[#6B7280] mb-1"
-                >
-                  Check-in Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="checkin"
-                  name="checkin"
-                  value={formData.checkin || ""}
-                  onChange={handleDateChange}
-                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
                   required
                 />
               </div>
-              <div>
-                <label
-                  htmlFor="checkout"
-                  className="block text-sm font-medium text-[#6B7280] mb-1"
-                >
-                  Check-out Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="checkout"
-                  name="checkout"
-                  value={formData.checkout || ""}
-                  onChange={handleDateChange}
-                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
-                  required
-                />
-              </div>
-              {/* Removed Special Requests Input */}
-              {/* Removed Voucher Code Input */}
             </div>
-
-            {/* Form Footer: Confirmation */}
-            <div className="pt-6 border-t border-[#E8E8E8] mt-6">
-              <h2 className="text-xl font-semibold text-[#334155] mb-4">
-                Booking Summary
-              </h2>
-              <div className="bg-[#F8FAFC] p-4 rounded-md border border-[#E7EBF5] text-sm text-[#202020] space-y-2">
-                <p>
-                  <span className="font-medium">Guest Name:</span>{" "}
-                  {formData.full_name || "N/A"}
-                </p>
-                <p>
-                  <span className="font-medium">Email:</span>{" "}
-                  {formData.email || "N/A"}
-                </p>
-                <p>
-                  <span className="font-medium">Phone:</span>{" "}
-                  {formData.phone_number || "N/A"}
-                </p>
-                <p>
-                  <span className="font-medium">Check-in Date:</span>{" "}
-                  {formData.checkin || "N/A"}
-                </p>
-                <p>
-                  <span className="font-medium">Check-out Date:</span>{" "}
-                  {formData.checkout || "N/A"}
-                </p>
-                <p>
-                  <span className="font-medium">Hotel:</span>{" "}
-                  {hotel.name || "N/A"}
-                </p>
-                <p>
-                  <span className="font-medium">Room Type:</span>{" "}
-                  {roomDetails.room_type_name || "N/A"} (Room {roomDetails.code}
-                  )
-                </p>
-                <p>
-                  <span className="font-medium">Amount Due:</span> $
-                  {formData.amount_required?.toFixed(2) || "0.00"}
-                </p>
-                <p className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="confirm_booking"
-                    checked={submissionConfirmed}
-                    onChange={handleToggleConfirmation}
-                    className="form-checkbox text-[#553ED0] rounded focus:ring-[#553ED0]"
-                  />
-                  <label
-                    htmlFor="confirm_booking"
-                    className="font-medium text-[#202020]"
-                  >
-                    I confirm the booking details are correct.
-                  </label>
-                </p>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                type="submit"
-                className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
-                  submissionConfirmed
-                    ? "bg-[#553ED0] text-white hover:bg-[#432DBA] shadow-md"
-                    : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                }`}
-                disabled={
-                  createBookingMutation.isPending || !submissionConfirmed
-                }
-              >
-                {createBookingMutation.isPending && (
-                  <FaSpinner className="animate-spin" />
-                )}
-                {createBookingMutation.isPending
-                  ? "Submitting..."
-                  : "Confirm & Book"}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Room Details Section */}
-        <div className="bg-white p-8 rounded-xl shadow-lg border border-[#E7EBF5]">
-          <h2 className="text-2xl font-bold text-[#202020] mb-6">
-            Room Details: {roomDetails.code}
-          </h2>
-          <div className="mb-6 rounded-lg overflow-hidden border border-[#E8E8E8]">
-            <img
-              src={
-                roomDetails.image ||
-                "https://placehold.co/600x400/e0e0e0/555555?text=Room+Image"
-              }
-              alt={`Room ${roomDetails.code}`}
-              className="w-full h-auto max-h-80 object-cover"
-            />
           </div>
-          <div className="space-y-4 text-[#202020]">
-            <p className="text-lg">
-              <span className="font-semibold text-[#334155]">Description:</span>{" "}
-              {roomDetails.description}
-            </p>
-            <p className="flex items-center gap-2 text-lg">
-              <FaDollarSign className="text-[#059669]" />
-              <span className="font-semibold text-[#334155]">
-                Price Per Night:
-              </span>{" "}
-              ${roomDetails.price_per_night?.toFixed(2)}
-            </p>
-            <p className="flex items-center gap-2 text-lg">
-              <FaBed className="text-[#553ED0]" />
-              <span className="font-semibold text-[#334155]">
-                Room Type:
-              </span>{" "}
-              {roomDetails.room_type_name}
-            </p>
-            <p className="flex items-center gap-2 text-lg">
-              <FaUsers className="text-[#553ED0]" />
-              <span className="font-semibold text-[#334155]">
-                Max Occupancy:
-              </span>{" "}
-              {roomDetails.max_occupancy} people
-            </p>
-            <p className="flex items-center gap-2 text-lg">
-              <FaStar className="text-amber-400" />
-              <span className="font-semibold text-[#334155]">
-                Average Rating:
-              </span>{" "}
-              {parseFloat(roomDetails.average_rating).toFixed(1)} (
-              {roomDetails.review_count} reviews)
-            </p>
 
-            <h3 className="text-xl font-semibold text-[#334155] pt-4 border-t border-[#E8E8E8] mt-4">
-              Amenities
-            </h3>
-            {roomDetails.amenities && roomDetails.amenities.length > 0 ? (
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-base">
-                {roomDetails.amenities.map((amenity) => (
-                  <li key={amenity.id} className="flex items-center gap-2">
-                    <span className="text-[#553ED0]">
-                      {getAmenityIcon(amenity.icon)}
-                    </span>{" "}
-                    {amenity.name}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[#6B7280]">
-                No amenities listed for this room.
+          {/* Booking Details */}
+          <div className="border-b border-[#E8E8E8] pb-4 pt-4">
+            <h2 className="text-xl font-semibold text-[#334155] mb-4">
+              Booking Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="start_date"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="start_date"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="end_date"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="end_date"
+                  name="end_date"
+                  value={formData.end_date}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  required
+                />
+              </div>
+              {/* property_item_type is now pre-filled and read-only */}
+              <div>
+                <label
+                  htmlFor="property_item_type"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Property Item Type
+                </label>
+                <input
+                  type="text"
+                  id="property_item_type"
+                  name="property_item_type"
+                  value={formData.property_item_type}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md bg-gray-100 text-[#202020] cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+              {/* property_id is now pre-filled and read-only */}
+              <div>
+                <label
+                  htmlFor="property_id"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Property ID
+                </label>
+                <input
+                  type="text"
+                  id="property_id"
+                  name="property_id"
+                  value={formData.property_id}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md bg-gray-100 text-[#202020] cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+
+              {/* Booking Type is hardcoded, so its select input is removed */}
+              <div>
+                <label
+                  htmlFor="booking_status"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Booking Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="booking_status"
+                  name="booking_status"
+                  value={formData.booking_status}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  required
+                >
+                  <option value="">Select Status</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Checked In">Checked In</option>
+                  <option value="Checked Out">Checked Out</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="No Show">No Show</option>
+                  <option value="Refunded">Refunded</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Reserved">Reserved</option>
+                  <option value="On Hold">On Hold</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="number_of_booked_property"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Number of Booked Property{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="number_of_booked_property"
+                  name="number_of_booked_property"
+                  value={formData.number_of_booked_property}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  min="1"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="number_of_guests"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Number of Guests <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="number_of_guests"
+                  name="number_of_guests"
+                  value={formData.number_of_guests}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  min="1"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="number_of_children"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Number of Children
+                </label>
+                <input
+                  type="number"
+                  id="number_of_children"
+                  name="number_of_children"
+                  value={formData.number_of_children}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  min="0"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="number_of_infants"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Number of Infants
+                </label>
+                <input
+                  type="number"
+                  id="number_of_infants"
+                  name="number_of_infants"
+                  value={formData.number_of_infants}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  min="0"
+                />
+              </div>
+              {/* amount_required is now pre-filled and read-only */}
+              <div>
+                <label
+                  htmlFor="amount_required"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Amount Required
+                </label>
+                <input
+                  type="text"
+                  id="amount_required"
+                  name="amount_required"
+                  value={formData.amount_required}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md bg-gray-100 text-[#202020] cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="amount_paid"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Amount Paid <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text" // Keep as text to match sample payload string format
+                  id="amount_paid"
+                  name="amount_paid"
+                  value={formData.amount_paid}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  placeholder="e.g., 150.00"
+                  required
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="special_requests"
+                  className="block text-sm font-medium text-[#6B7280] mb-1"
+                >
+                  Special Requests
+                </label>
+                <textarea
+                  id="special_requests"
+                  name="special_requests"
+                  value={formData.special_requests}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full p-2 border border-[#E8E8E8] rounded-md focus:ring-[#553ED0] focus:border-[#553ED0] bg-[#F8FAFC] text-[#202020]"
+                  placeholder="Any special requests for the booking..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          {/* Confirmation and Submit */}
+          <div className="pt-6 border-t border-[#E8E8E8] mt-6">
+            <h2 className="text-xl font-semibold text-[#334155] mb-4">
+              Confirm Booking
+            </h2>
+            <div className="bg-[#F8FAFC] p-4 rounded-md border border-[#E7EBF5] text-sm text-[#202020] space-y-2">
+              <p className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="confirm_booking"
+                  checked={submissionConfirmed}
+                  onChange={handleToggleConfirmation}
+                  className="form-checkbox text-[#553ED0] rounded focus:ring-[#553ED0]"
+                />
+                <label
+                  htmlFor="confirm_booking"
+                  className="font-medium text-[#202020]"
+                >
+                  I confirm the booking details are correct.
+                </label>
               </p>
-            )}
+            </div>
           </div>
-        </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="submit"
+              className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                submissionConfirmed
+                  ? "bg-[#553ED0] text-white hover:bg-[#432DBA] shadow-md"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
+              disabled={createBookingMutation.isPending || !submissionConfirmed}
+            >
+              {createBookingMutation.isPending && (
+                <FaSpinner className="animate-spin" />
+              )}
+              {createBookingMutation.isPending
+                ? "Submitting..."
+                : "Confirm & Book"}
+            </button>
+          </div>
+        </form>
       </div>
 
       <ToastContainer
