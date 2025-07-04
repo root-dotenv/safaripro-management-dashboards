@@ -1,28 +1,34 @@
 // - - - safaripro_admin/src/pages/bookings/all-bookings.tsx
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, QueryClient } from "@tanstack/react-query"; // Added useMutation, QueryClient
 import axios from "axios"; // Using axios directly as requested
 import type { Booking } from "./booking-types";
 import {
-  FaEye,
-  FaSpinner,
+  FaEye, // Removed from rendering, but kept in import for other potential uses
   FaInfoCircle,
   FaCalendarAlt,
   FaDollarSign,
   FaUser,
-  FaBuilding,
   FaBed,
   FaSearch,
   FaTimes,
-  FaSyncAlt, // Added for Refetch button (though not used for API refetch in this hardcoded version)
-  FaFileCsv, // Added for CSV export
-  FaSort, // For sortable columns
-  FaSortUp, // For ascending sort
-  FaSortDown, // For descending sort
+  FaSyncAlt,
+  FaFileCsv,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaTrash, // Added for delete button
+  FaEdit, // Added for edit button
+  FaSpinner, // Used for loading state on delete button
 } from "react-icons/fa";
-import React, { useState, useMemo, useEffect } from "react"; // Added useMemo, useEffect
+import React, { useState, useMemo, useEffect } from "react";
 import CustomLoader from "../../components/ui/custom-loader";
 import { FiAlertTriangle } from "react-icons/fi";
 import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
+import Swal from "sweetalert2"; // For confirmation dialogs
+import { toast } from "react-toastify"; // For toast notifications
+
+const queryClient = new QueryClient(); // Initialize QueryClient
 
 // Reusable No Data / Error Message Component (copied from all-rooms.tsx)
 const NoDataMessage: React.FC<{
@@ -64,6 +70,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function AllBookings() {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500); // Debounce search term
 
@@ -187,6 +194,64 @@ export default function AllBookings() {
     [allBookings]
   );
 
+  // Mutation for Deleting Booking
+  const deleteBookingMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const response = await axios.delete(
+        `https://booking.tradesync.software/api/v1/bookings/${bookingId}`
+      );
+      return response.data;
+    },
+    onMutate: async (bookingIdToDelete: string) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["bookings"] });
+
+      // Snapshot the previous value
+      const previousBookings = queryClient.getQueryData<{
+        results: Booking[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+      }>(["bookings"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData<{
+        results: Booking[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+      }>(["bookings"], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          results: old.results.filter(
+            (booking) => booking.id !== bookingIdToDelete
+          ),
+          count: old.count - 1,
+        };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousBookings };
+    },
+    onSuccess: () => {
+      toast.success("Booking deleted successfully!");
+    },
+    onError: (err, bookingIdToDelete, context) => {
+      toast.error(
+        `Error deleting booking: ${err.message || "An unknown error occurred"}`
+      );
+      // Rollback to the previous data if the mutation fails
+      if (context?.previousBookings) {
+        queryClient.setQueryData(["bookings"], context.previousBookings);
+      }
+    },
+    onSettled: () => {
+      // Invalidate and refetch after error or success to ensure data is fresh
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
   if (isLoading) {
     return <CustomLoader message="Loading bookings..." />;
   }
@@ -206,7 +271,8 @@ export default function AllBookings() {
 
   const showBookingDetailsModal = (bookingId: string) => {
     console.log(`Show details for booking ID: ${bookingId}`);
-    // Implement a modal or navigate to a detail page here
+    // This function can be expanded to navigate to a read-only details page
+    // or open a modal displaying more details.
   };
 
   const handleSort = (column: keyof Booking) => {
@@ -238,12 +304,33 @@ export default function AllBookings() {
     setSortDirection("asc");
   };
 
+  const handleEdit = (bookingId: string) => {
+    navigate(`/bookings/all-bookings/edit/${bookingId}`); // Navigate to the new edit page
+  };
+
+  const handleDelete = (bookingId: string, bookingCode: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete booking "${bookingCode}". This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteBookingMutation.mutate(bookingId);
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        toast.info("Delete action cancelled.");
+      }
+    });
+  };
+
   const exportBookingsToCsv = (bookingsToExport: Booking[]) => {
     if (!bookingsToExport.length) {
-      // Using sonner toast for consistent notifications
-      // No direct import for toast, assuming it's available or needs to be imported.
-      // For now, will use console.log as a fallback if sonner is not set up.
       console.log("No bookings to export to CSV.");
+      toast.info("No bookings to export to CSV.");
       return;
     }
 
@@ -295,16 +382,14 @@ export default function AllBookings() {
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", `bookings_report.csv`);
+      link.setAttribute("download", `all_bookings_report.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      console.log(`Exported ${bookingsToExport.length} bookings to CSV!`);
+      toast.success(`Exported ${bookingsToExport.length} bookings to CSV!`);
     } else {
-      console.error(
-        "Your browser does not support downloading files directly."
-      );
+      toast.error("Your browser does not support downloading files directly.");
     }
   };
 
@@ -573,15 +658,13 @@ export default function AllBookings() {
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-[#202020]">
                     <div className="flex items-center">
-                      <FaBuilding className="mr-1 text-[#553ED0]" />{" "}
-                      {/* Purple icon for hotel [cite: THEME.md] */}
                       {booking.microservice_item_name}
                     </div>
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-[#202020]">
                     <div className="flex items-center">
                       <FaBed className="mr-1 text-[#F59E0B]" />{" "}
-                      {/* Orange icon for room type [cite: THEME.md] */}
+                      {/* Orange icon for room type */}
                       {booking.property_item_type}
                     </div>
                   </td>
@@ -602,10 +685,10 @@ export default function AllBookings() {
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         booking.booking_status === "Cancelled"
-                          ? "bg-[#FEE2E2] text-[#C72A2F]" // Red [cite: THEME.md]
+                          ? "bg-[#FEE2E2] text-[#C72A2F]" // Red
                           : booking.booking_status === "Confirmed"
-                          ? "bg-[#D1FAE5] text-[#059669]" // Green [cite: THEME.md]
-                          : "bg-[#FEF9C3] text-[#F59E0B]" // Orange/Yellow for processing/pending [cite: THEME.md]
+                          ? "bg-[#D1FAE5] text-[#059669]" // Green
+                          : "bg-[#FEF9C3] text-[#F59E0B]" // Orange/Yellow for processing/pending
                       }`}
                     >
                       {booking.booking_status}
@@ -623,13 +706,31 @@ export default function AllBookings() {
                     {booking.booking_source}
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap text-center text-sm text-[#202020]">
-                    <button
-                      onClick={() => showBookingDetailsModal(booking.id)}
-                      className="text-[#5A43D6] hover:text-[#432DBA] font-medium" // Purple accent from THEME.md [cite: THEME.md]
-                      title="View Booking Details"
-                    >
-                      <FaEye size={16} />
-                    </button>
+                    <div className="flex space-x-3 justify-center">
+                      <button
+                        onClick={() => handleEdit(booking.id)}
+                        className="hover:text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-medium text-[0.875rem] transition-colors border-[#D9DAFF] border-[1px] bg-[#E5E6FF] text-[#5A43D6]"
+                        title="Edit Booking"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(booking.id, booking.code)}
+                        disabled={
+                          deleteBookingMutation.isLoading &&
+                          deleteBookingMutation.variables === booking.id
+                        }
+                        className="hover:text-red-800 px-2.5 py-0.5 rounded-full text-xs font-medium text-[0.875rem] bg-[#ffd6d7] text-[#C72A2F] border-[1px] border-[#fec6c8] transition-colors"
+                        title="Delete Booking"
+                      >
+                        {deleteBookingMutation.isLoading &&
+                        deleteBookingMutation.variables === booking.id ? (
+                          <FaSpinner className="animate-spin h-4 w-4" />
+                        ) : (
+                          "Delete"
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

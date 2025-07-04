@@ -20,6 +20,9 @@ import SafariproBookings from "../pages/bookings/safaripro-bookings";
 import AllBookings from "../pages/bookings/all-bookings";
 import HotelMeals from "../pages/hotel/hotel-meals";
 import ReportsPage from "../pages/reports/reports";
+import EditSafariproBookingPage from "../pages/bookings/edit-safaripro-booking";
+import EditAllBookingPage from "../pages/bookings/edit-all-booking";
+import CreateBookingForm from "../pages/bookings/create-booking-form";
 
 export default function AppRoutes() {
   return (
@@ -69,6 +72,18 @@ export default function AppRoutes() {
       />
       <Route path="/bookings/available-rooms" element={<AvailableRooms />} />
       <Route path="/bookings/special-requests" element={<SpecialRequests />} />
+      <Route
+        path="/bookings/safaripro-bookings/edit/:bookingId"
+        element={<EditSafariproBookingPage />}
+      />
+      <Route
+        path="/bookings/all-bookings/edit/:bookingId"
+        element={<EditAllBookingPage />}
+      />
+      <Route
+        path="/bookings/new-booking/:roomId"
+        element={<CreateBookingForm />}
+      />
 
       {/* - - - Amenities Routes */}
       {/* <Route path="/amenities/all-amenities" element={<Amenities />} />
