@@ -17,20 +17,14 @@ import {
   FaCheckCircle,
   FaStar,
   FaInfoCircle,
-  FaSyncAlt,
-  FaFileCsv, // Added for CSV export
-  FaFilePdf, // Added for PDF export
+  FaSyncAlt, // Added for refetch button
 } from "react-icons/fa";
-import { toast } from "sonner";
+import { toast } from "sonner"; // Assuming 'sonner' for toast notifications
 import { FiAlertTriangle } from "react-icons/fi";
 import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
 import hotelClient from "../../api/hotel-client";
 import { PiDotsSixVertical } from "react-icons/pi";
 import { IoAddOutline } from "react-icons/io5";
-
-// Import jsPDF for PDF generation
-import jsPDF from "jspdf";
-import "jspdf-autotable"; // Plugin for auto-generating tables in jsPDF
 
 // --- TYPE DEFINITIONS ---
 interface Room {
@@ -150,7 +144,7 @@ export default function AllRooms() {
     isLoading: isLoadingAvailable,
     isError: isErrorAvailable,
     error: errorAvailable,
-    refetch: refetchAvailableRooms,
+    refetch: refetchAvailableRooms, // Get refetch function
   } = useQuery<RoomsResponse, AxiosError>({
     queryKey: [
       "rooms",
@@ -171,7 +165,7 @@ export default function AllRooms() {
     isLoading: isLoadingBooked,
     isError: isErrorBooked,
     error: errorBooked,
-    refetch: refetchBookedRooms,
+    refetch: refetchBookedRooms, // Get refetch function
   } = useQuery<RoomsResponse, AxiosError>({
     queryKey: [
       "rooms",
@@ -191,7 +185,7 @@ export default function AllRooms() {
     isLoading: isLoadingMaintenance,
     isError: isErrorMaintenance,
     error: errorMaintenance,
-    refetch: refetchMaintenanceRooms,
+    refetch: refetchMaintenanceRooms, // Get refetch function
   } = useQuery<RoomsResponse, AxiosError>({
     queryKey: [
       "rooms",
@@ -222,6 +216,10 @@ export default function AllRooms() {
       ].sort((a, b) => a - b),
     [allRoomsForFilterOptions]
   );
+  // const uniqueRoomTypes = useMemo( // This was unused, commenting out
+  //   () => [...new Set(allRoomsForFilterOptions.map((room) => room.room_type))],
+  //   [allRoomsForFilterOptions]
+  // );
 
   // --- Delete Room Mutation ---
   const deleteRoomMutation = useMutation<void, AxiosError, string>({
@@ -232,6 +230,7 @@ export default function AllRooms() {
     },
     onSuccess: () => {
       toast.success("Room deleted successfully!");
+      // Invalidate queries to refetch data for all tabs
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
     },
     onError: (error) => {
@@ -291,129 +290,6 @@ export default function AllRooms() {
     toast.info("Refetching all room data...");
   };
 
-  // --- Export Functions ---
-  const exportRoomsToCsv = (roomsToExport: Room[]) => {
-    if (!roomsToExport.length) {
-      toast.info("No rooms to export to CSV.");
-      return;
-    }
-
-    const headers = [
-      "Code",
-      "Description",
-      "Max Occupancy",
-      "Price Per Night",
-      "Availability Status",
-      "Average Rating",
-      "Review Count",
-      "Room Type ID",
-      "Hotel ID",
-    ];
-
-    const csvContent =
-      headers.join(",") +
-      "\n" +
-      roomsToExport
-        .map((room) =>
-          [
-            `"${room.code}"`,
-            `"${room.description.replace(/"/g, '""')}"`, // Handle quotes in description
-            room.max_occupancy,
-            room.price_per_night.toFixed(2),
-            room.availability_status,
-            room.average_rating.toFixed(1),
-            room.review_count,
-            room.room_type,
-            room.hotel,
-          ].join(",")
-        )
-        .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `rooms_report_${activeTab}.csv`);
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success(`Exported ${roomsToExport.length} rooms to CSV!`);
-    } else {
-      toast.error("Your browser does not support downloading files directly.");
-    }
-  };
-
-  const exportRoomsToPdf = (roomsToExport: Room[]) => {
-    if (!roomsToExport.length) {
-      toast.info("No rooms to export to PDF.");
-      return;
-    }
-
-    const doc = new jsPDF();
-
-    // Add title
-    doc.setFontSize(18);
-    doc.text(
-      `Rooms Report - ${
-        activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
-      }`,
-      14,
-      22
-    );
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
-
-    // Prepare table headers
-    const head = [
-      [
-        "Code",
-        "Description",
-        "Max Occupancy",
-        "Price/Night",
-        "Status",
-        "Rating",
-      ],
-    ];
-
-    // Prepare table data
-    const body = roomsToExport.map((room) => [
-      room.code,
-      room.description,
-      room.max_occupancy,
-      `$${room.price_per_night.toFixed(2)}`,
-      room.availability_status,
-      `${room.average_rating.toFixed(1)} (${room.review_count})`,
-    ]);
-
-    // Add table using jspdf-autotable
-    (doc as any).autoTable({
-      startY: 35, // Start table below the title
-      head: head,
-      body: body,
-      theme: "striped", // Optional: 'striped', 'grid', 'plain'
-      headStyles: { fillColor: [85, 62, 208], textColor: [255, 255, 255] }, // Match your theme's purple
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        overflow: "linebreak",
-        halign: "left",
-      },
-      columnStyles: {
-        0: { cellWidth: 20 }, // Code
-        1: { cellWidth: 50 }, // Description
-        2: { cellWidth: 25 }, // Max Occupancy
-        3: { cellWidth: 25 }, // Price
-        4: { cellWidth: 25 }, // Status
-        5: { cellWidth: 25 }, // Rating
-      },
-    });
-
-    doc.save(`rooms_report_${activeTab}.pdf`);
-    toast.success(`Exported ${roomsToExport.length} rooms to PDF!`);
-  };
-
   // --- Centralized Error and Loading Renderers ---
   const renderStatusOrError = (
     isLoading: boolean,
@@ -449,7 +325,7 @@ export default function AllRooms() {
         />
       );
     }
-    return null;
+    return null; // No loading or error, proceed to render table
   };
 
   const renderTable = (
@@ -721,7 +597,7 @@ export default function AllRooms() {
         </p>
       </div>
 
-      {/* --- Tab Navigation & Action Buttons --- */}
+      {/* --- Tab Navigation & Add New Room Button --- */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 px-4">
         {/* Tab Buttons */}
         <div className="flex items-center flex-wrap gap-2">
@@ -772,7 +648,7 @@ export default function AllRooms() {
           </button>
         </div>
 
-        {/* Action Buttons: Add New, Refetch, Export */}
+        {/* Add New Room Button and Refetch Button */}
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={() => navigate("/rooms/add-room")}
@@ -784,19 +660,10 @@ export default function AllRooms() {
 
           <button
             onClick={handleRefetchAllRooms}
-            className="px-6 py-2 rounded-full flex items-center transition-colors duration-300 flex-shrink-0 mt-4 sm:mt-0 border-[#D1FAE5] border-[1px] bg-[#E5FFE5] text-[#059669] text-[0.875rem] font-medium hover:bg-[#C8F5C8]"
+            className="px-6 py-2 rounded-full flex items-center transition-colors duration-300 flex-shrink-0 mt-4 sm:mt-0 border-[#A8F6CF] border-[1px] bg-[#D1FAE6] text-[#04966A] text-[0.875rem] font-medium hover:bg-[#C8F5C8]"
           >
             <FaSyncAlt size={16} className="mr-1.5" />
-            Refetch Rooms
-          </button>
-
-          <button
-            onClick={() => exportRoomsToCsv(filteredRooms)}
-            className="px-6 py-2 rounded-full flex items-center transition-colors duration-300 flex-shrink-0 mt-4 sm:mt-0 border-[#FFD580] border-[1px] bg-[#FFF8E1] text-[#FFA500] text-[0.875rem] font-medium hover:bg-[#FFE0B2]"
-            title="Export current table data to CSV"
-          >
-            <FaFileCsv size={16} className="mr-1.5" />
-            Export CSV
+            Refresh
           </button>
         </div>
       </div>
