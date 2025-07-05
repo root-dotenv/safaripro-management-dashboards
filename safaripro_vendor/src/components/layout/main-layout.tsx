@@ -1,5 +1,5 @@
 // - - - safaripro_admin/src/components/layout/main-layout.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Import useEffect
 import TopNavigationBar from "./top-navigation";
 import SideBar from "./side-bar";
 
@@ -14,7 +14,22 @@ export default function MainLayout({
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">("light");
+  // Initialize theme from localStorage or default to 'light'
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme === "dark" ? "dark" : "light";
+  });
+
+  // Effect to apply/remove 'dark' class on <html> and update localStorage
+  useEffect(() => {
+    const html = document.documentElement;
+    if (currentTheme === "dark") {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
+    localStorage.setItem("theme", currentTheme);
+  }, [currentTheme]); // Re-run effect when currentTheme changes
 
   const toggleTheme = () => {
     setCurrentTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
@@ -25,12 +40,14 @@ export default function MainLayout({
       <TopNavigationBar
         toggleTheme={toggleTheme}
         currentTheme={currentTheme}
-        logoText="SafariPro Admin"
+        logoText="SafariPro Vendor" // Updated logoText for vendor
       />
       <div className="flex flex-1 overflow-hidden">
         {" "}
         <SideBar collapsed={sidebarCollapsed} toggleCollapse={toggleSidebar} />
         <main className="flex-1 overflow-y-auto bg-[#F9F9F9] dark:bg-gray-900">
+          {" "}
+          {/* Apply dark mode background */}
           {children}
         </main>
       </div>

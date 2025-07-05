@@ -219,18 +219,18 @@ export default function SideBar({ collapsed, toggleCollapse }: SideBarProps) {
             {/* - - - Reservations Route & Subroute */}
             <SidebarSubMenu
               title="Reservations"
-              icon={<LuNotebookText color="#404042" size={19} />}
+              icon={<FiUsers color="#404042" size={19} />}
               collapsed={collapsed}
               isOpen={openSubmenus.reservations}
               onToggle={() => toggleSubmenu("reservations")}
             >
-              <SidebarLink
+              {/* <SidebarLink
                 to="/reservations/guests"
                 icon={<FiUsers color="#404042" size={19} />}
                 text="Guests"
                 collapsed={collapsed}
                 isSubLink
-              />
+              /> */}
               <SidebarLink
                 to="/reservations/checked-in"
                 icon={<MdEventAvailable size={19} color="#404042" />}

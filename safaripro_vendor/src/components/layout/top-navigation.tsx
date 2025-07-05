@@ -45,9 +45,13 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
   };
 
   return (
-    <nav className="flex flex-col bg-transpareny dark:bg-gray-800 w-full transition-colors duration-300 border-b-[#E8E8E8] border-b-[1.5px] relative">
+    <nav className="flex flex-col bg-transparent dark:bg-gray-800 w-full transition-colors duration-300 border-b-[#E8E8E8] dark:border-b-gray-700 border-b-[1.5px] relative">
+      {" "}
+      {/* Apply dark mode background and border */}
       {/* 1. Top-Navigation Bar */}
-      <div className="bg-[rgb(43,33,106)] h-[48px] w-full grid grid-cols-12">
+      <div className="bg-[rgb(43,33,106)] dark:bg-gray-900 h-[48px] w-full grid grid-cols-12">
+        {" "}
+        {/* Apply dark mode background */}
         {/* - - - A. Forward/Back, Searchbar, Calendar */}
         <div className="h-full flex items-center justify-center gap-x-[0.75rem] col-start-4 col-span-5">
           <div className="flex items-center gap-x-[0.75rem]">
@@ -68,14 +72,15 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
             <input
               type="text"
               placeholder="Search for anything..."
-              className="pl-10 pr-4 py-[6px] rounded-md bg-[#483F7E] text-white placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-[#7E53FC] text-[0.875rem] w-[380px]"
+              className="pl-10 pr-4 py-[6px] rounded-md bg-[#483F7E] dark:bg-gray-700 text-white dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#7E53FC] dark:focus:ring-blue-400 text-[0.875rem] w-[380px]"
             />
           </div>
-          <button className="block p-[6px] rounded-[8px] bg-[#FFF] cursor-pointer shadow">
+          <button className="block p-[6px] rounded-[8px] bg-[#FFF] dark:bg-gray-700 cursor-pointer shadow">
+            {" "}
+            {/* Apply dark mode background */}
             <IoCalendarOutline color="#838383" size={18} />
           </button>
         </div>
-
         {/* - - - B. Welcome,Profile, Notifications, Messages, Quick Actions(grid-menu) */}
         <div className="h-full flex items-center justify-end gap-x-[0.75rem] col-span-4 pr-[1rem]">
           <button className="bg-gradient-to-br from-[#6290FA] to-[#833FFC] px-[0.9375rem] py-[6px] flex items-center gap-2 text-[0.875rem] text-[#FFF] font-medium rounded-md cursor-pointer">
@@ -86,7 +91,8 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
             <CgMenuGridO color="#FFF" size={24} />
           </button>
           {/* - - - divider */}
-          <div className="h-[20px] bg-[#554F89] w-[1.75px]"></div>
+          <div className="h-[20px] bg-[#554F89] dark:bg-gray-600 w-[1.75px]"></div>{" "}
+          {/* Apply dark mode background */}
           <div className="flex items-center gap-x-[1rem]">
             <button className="block cursor-pointer">
               <LuMessageSquareText color="#FFF" size={22} />
@@ -96,7 +102,7 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
             </button>
             <button
               onClick={handleAccountModal}
-              className="flex gap-1 bg-[#483F7E] items-center cursor-pointer rounded-full px-[8px] py-[4px] border-[1px] border-[#8f8f8f] text-[#FFF] transition-all duration-[400]"
+              className="flex gap-1 bg-[#483F7E] dark:bg-gray-700 items-center cursor-pointer rounded-full px-[8px] py-[4px] border-[1px] border-[#8f8f8f] dark:border-gray-600 text-[#FFF] transition-all duration-[400]" // Apply dark mode background and border
             >
               <span className="text-[0.75rem] font-bold text-[#FFF] bg-[#553ED0] rounded-full px-[8px] py-[4px]">
                 R
@@ -108,9 +114,10 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
           </div>
         </div>
       </div>
-
       {/* 2. Title-Bar Sub-navigation Bar */}
-      <div className="bg-[#FFF] w-full h-[48px] grid grid-cols-12 items-center px-[1rem]">
+      <div className="bg-[#FFF] dark:bg-gray-800 w-full h-[48px] grid grid-cols-12 items-center px-[1rem]">
+        {" "}
+        {/* Apply dark mode background */}
         {/* - - - Static Logo */}
         <div className="col-span-5 flex gap-x-[0.75rem] items-center">
           {/* <div className="h-[2rem]">
@@ -120,29 +127,26 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
               alt="company_logo_black"
             />
           </div>
-          <span className="font-semibold text-[1.375rem] text-[#404042]">
+          <span className="font-semibold text-[1.375rem] text-[#404042] dark:text-gray-100">
             SafariPro
           </span> */}
         </div>
-        {/*  - - - Dynamic Header */}
-        {/* <div className="w-full col-span-5">
-          <p>Facilities</p>
-        </div> */}
         {/* - - -  & Action Button */}
         <div className="col-span-7 flex gap-x-[1rem] items-center justify-end">
           <button
             onClick={handleQuickActionsModal}
-            className="bg-[#6149E8] gap-x-1 px-[0.9375rem] py-[6px] flex items-center gap-2 text-[0.875rem] text-[#FFF] font-medium rounded-md cursor-pointer"
+            className="bg-[#6149E8] dark:bg-custom-purple gap-x-1 px-[0.9375rem] py-[6px] flex items-center gap-2 text-[0.875rem] text-[#FFF] font-medium rounded-md cursor-pointer"
           >
             <MdAdd color="#FFF" size={17} />
             New
           </button>
           {/* - - - divider */}
-          <div className="h-[20px] bg-[#8f8f8f] w-[1.5px]"></div>
+          <div className="h-[20px] bg-[#8f8f8f] dark:bg-gray-600 w-[1.5px]"></div>{" "}
+          {/* Apply dark mode background */}
           {/* Theme mode switch */}
           <button
             onClick={toggleTheme}
-            className="cursor-pointer px-[10px] py-[8px] rounded-[8px] bg-[#F0F0F0] hover:bg-[#F0F0F0]"
+            className="cursor-pointer px-[10px] py-[8px] rounded-[8px] bg-[#F0F0F0] dark:bg-gray-700 hover:bg-[#F0F0F0] dark:hover:bg-gray-600" // Apply dark mode background and hover
           >
             {currentTheme === "dark" ? (
               <IoSunny color="#F7C322" size={18} />
@@ -155,10 +159,8 @@ const TopNavigationBar: React.FC<TopNavbarProps> = ({
           </button>
         </div>
       </div>
-
       {/* - - - User Account Details Card  */}
       <UserProfileCard isOpen={openAccountModal} onClose={handleAccountModal} />
-
       {/* - - - Quick Actions Modal */}
       <QuickLinksCard
         isOpen={openQuickActionsModal}

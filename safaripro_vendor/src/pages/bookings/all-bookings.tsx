@@ -649,7 +649,13 @@ export default function AllBookings() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedBookings.map((booking, index) => (
-                <tr key={booking.id} className="hover:bg-gray-50">
+                <tr
+                  onClick={() =>
+                    navigate(`/reservations/guests?bookingId=${booking.id}`)
+                  }
+                  key={booking.id}
+                  className="hover:bg-gray-50"
+                >
                   <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                     {index + 1}
                   </td>
